@@ -1,4 +1,8 @@
-# Codex-First MCP Coding Setup Plan
+# Codex Setup
+
+This folder contains the current Codex-first implementation for `ai-dev-bootstrap`.
+
+If you want the repo overview or the future multi-agent layout, start at the root `README.md`.
 
 This plan is optimized for the weaknesses you care about most:
 
@@ -83,8 +87,11 @@ Install these first:
 - Node.js `20+`
 - `npm` / `npx`
 - VS Code
-- Docker only if you want the local GitHub MCP fallback
 - ChatGPT Plus / Codex access
+
+Optional:
+
+- Docker, only if you want an alternative container-based workflow later
 
 Useful checks:
 
@@ -92,9 +99,35 @@ Useful checks:
 node --version
 npm --version
 code --version
-docker --version
 codex --version
 ```
+
+Optional check:
+
+```bash
+docker --version
+```
+
+## Hardware Recommendations
+
+For the current Codex-first setup, local hardware matters more for `VS Code + browser + terminals + Playwright` than for model inference.
+
+Official minimums are low:
+
+- VS Code recommends a `1.6 GHz+` CPU and `1 GB RAM`
+- Claude Code documents `4 GB+ RAM`
+- if you choose to use Docker Desktop for Linux later, it requires `at least 4 GB of RAM`
+
+Practical recommendation for this repo:
+
+- `Baseline`: 4 modern CPU cores, `16 GB RAM`, SSD storage, no discrete GPU required
+- `Comfortable daily use`: 6 to 8 CPU cores, `32 GB RAM`, `512 GB+` SSD
+- `Heavy local multitasking`: `32 GB RAM` minimum if you keep Playwright, a browser, multiple IDE windows, and optional Docker workloads open at the same time
+
+GPU note:
+
+- for the setup in this folder, a dedicated GPU is optional
+- if you later add local models, the hardware guidance changes substantially and should be documented separately
 
 ## Phase 1: Install Codex
 
@@ -124,7 +157,7 @@ OpenAI documents that your MCP server configuration is shared between the Codex 
 Create a folder for persistent project memory:
 
 ```bash
-mkdir -p /home/aldenpark/dev/local-dev/.ai
+mkdir -p ./.ai
 ```
 
 Add the OpenAI docs server:
@@ -144,7 +177,7 @@ Add the memory server:
 
 ```bash
 codex mcp add memory \
-  --env MEMORY_FILE_PATH=/home/aldenpark/dev/local-dev/.ai/memory.json \
+  --env MEMORY_FILE_PATH="$(pwd)/.ai/memory.json" \
   -- npx -y @modelcontextprotocol/server-memory
 ```
 
@@ -266,7 +299,7 @@ VS Code also supports MCP servers through workspace configuration. This is usefu
 
 I added a starter config at:
 
-- [.vscode/mcp.json](/home/aldenpark/dev/local-dev/.vscode/mcp.json)
+- `.vscode/mcp.json`
 
 What it contains:
 
@@ -372,7 +405,7 @@ If you want the smallest useful setup, do only this:
 codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp
 
 codex mcp add memory \
-  --env MEMORY_FILE_PATH=/home/aldenpark/dev/local-dev/.ai/memory.json \
+  --env MEMORY_FILE_PATH="$(pwd)/.ai/memory.json" \
   -- npx -y @modelcontextprotocol/server-memory
 
 codex mcp add playwright \
@@ -398,7 +431,7 @@ After setup, verify these:
 - `codex mcp list` shows all expected servers
 - Codex can answer current docs questions with search enabled
 - Playwright can open your local app
-- memory writes persist to `/home/aldenpark/dev/local-dev/.ai/memory.json`
+- memory writes persist to `./.ai/memory.json`
 - GitHub queries work for your repos
 
 ## Leave It As Is For Now
@@ -431,7 +464,7 @@ Recommended rule: use this setup for a week before adding new MCP servers or a s
 Use the installer script in this repo:
 
 ```bash
-./scripts/install-codex-mcp-setup.sh
+./codex/scripts/install-codex-mcp-setup.sh
 ```
 
 What it does:
@@ -445,19 +478,19 @@ What it does:
 Useful examples:
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --install-vscode-extension
+./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
 ```
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --prompt-github-pat
+./codex/scripts/install-codex-mcp-setup.sh --prompt-github-pat
 ```
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --skip-github
+./codex/scripts/install-codex-mcp-setup.sh --skip-github
 ```
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --memory-dir "$HOME/.codex-memory/local-dev"
+./codex/scripts/install-codex-mcp-setup.sh --memory-dir "$HOME/.codex-memory/local-dev"
 ```
 
 Important GitHub note:

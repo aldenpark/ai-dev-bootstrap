@@ -2,7 +2,7 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
+repo_root="$(cd "$script_dir/../.." && pwd)"
 
 memory_dir="$repo_root/.ai"
 github_pat_env_var="GITHUB_MCP_PAT"
@@ -12,7 +12,7 @@ prompt_github_pat=0
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install-codex-mcp-setup.sh [options]
+Usage: ./codex/scripts/install-codex-mcp-setup.sh [options]
 
 Options:
   --memory-dir PATH              Override the Memory MCP directory.

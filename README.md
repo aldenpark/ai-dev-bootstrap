@@ -12,9 +12,17 @@ This repo is for building a repeatable local setup that improves common AI codin
 - weak GitHub context
 - guessing about browser behavior instead of verifying it
 
+## Layout
+
+- `README.md`: repo overview and navigation
+- `codex/`: the working Codex-specific setup, docs, and installer
+- `claude/`: Claude-specific notes and future setup
+- `.vscode/`: workspace-level editor configuration
+- `AGENTS.md`: repo-local Codex behavior rules for this repo itself
+
 ## Current Scope
 
-Today this repo is centered on a Codex-first workflow with:
+Today the implemented path is centered on a Codex-first workflow with:
 
 - Codex CLI
 - Codex VS Code integration
@@ -36,29 +44,38 @@ Planned additions include:
 
 ## Quick Start
 
-Run the installer:
+Current working path:
+
+- [Codex setup](codex/README.md)
+
+Planned next path:
+
+- [Claude setup](claude/README.md)
+
+Run the current Codex installer:
 
 ```bash
-./scripts/install-codex-mcp-setup.sh
+./codex/scripts/install-codex-mcp-setup.sh
 ```
 
 If you want the script to prompt for your GitHub PAT and save it into the detected shell startup file:
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --prompt-github-pat
+./codex/scripts/install-codex-mcp-setup.sh --prompt-github-pat
 ```
 
 If you also want the VS Code extension installed:
 
 ```bash
-./scripts/install-codex-mcp-setup.sh --install-vscode-extension
+./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
 ```
 
 ## Main Files
 
-- `Local AI Coding Environment Setup.md`: detailed setup plan and operating notes
+- `codex/README.md`: current Codex setup plan and operating notes
+- `claude/README.md`: Claude placeholder and future entry point
 - `AGENTS.md`: repo-local behavior rules for Codex
-- `scripts/install-codex-mcp-setup.sh`: portable installer for the current Codex + MCP stack
+- `codex/scripts/install-codex-mcp-setup.sh`: portable installer for the current Codex + MCP stack
 - `.vscode/mcp.json`: workspace MCP configuration
 
 ## Status
