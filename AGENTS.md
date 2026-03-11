@@ -7,8 +7,18 @@ This repo uses Codex as the primary controller. MCP servers are helpers, not dec
 - Use `search` or docs tools for current, versioned, or uncertain information.
 - Use `sequential-thinking` before multi-file work, refactors, or architectural changes.
 - Write short, durable decisions to memory. Do not dump raw chat transcripts into memory.
+- Read `CURRENT_STATE.md` and `DECISIONS.md` at the start of non-trivial repo work.
+- Update `CURRENT_STATE.md` and `DECISIONS.md` when durable repo-level state or decisions change.
+- Prefer safe parallelism for independent reads, searches, docs checks, and verification steps.
 - Prefer the smallest patch that satisfies the requirement.
 - Use tests, lint, type checks, and browser verification as the final arbiters.
+
+## Parallelism
+
+- Use parallelism for independent reads, lookups, and verification.
+- Keep one controller and one final writer for the task.
+- Do not make parallel edits to the same files.
+- Do not run competing implementations unless the user explicitly asks for alternatives.
 
 ## React And Browser Policy
 
@@ -41,6 +51,7 @@ For browser work, follow this pattern:
 
 - If the user asks for the latest or current behavior, search before answering.
 - If the task depends on OpenAI or Codex docs, use the OpenAI docs MCP when available.
+- Use `context7` for current library/framework/API documentation when it is a better fit than generic web search.
 - If a remote docs MCP is unavailable, say so briefly and fall back to official docs or search.
 
 ## Memory
@@ -52,3 +63,8 @@ Store only concise, reusable facts such as:
 - chosen ports and local URLs
 - accepted implementation constraints
 - recurring commands
+
+For human-readable repo state, use:
+
+- `CURRENT_STATE.md`
+- `DECISIONS.md`

@@ -4,6 +4,13 @@ This folder contains the Claude-specific implementation for `ai-dev-bootstrap`.
 
 If you want the repo overview or the multi-agent layout, start at the root `README.md`.
 
+Recommended workflow split for this repo:
+
+- `claude/` uses `task-master` as the preferred execution and backlog layer
+- `codex/` uses `spec-kit` as the preferred structure and planning layer
+- shared tools like Context7, Repomix, and Promptfoo live in `shared/`
+- shared repo state lives in `CURRENT_STATE.md` and `DECISIONS.md`
+
 This plan targets the same weaknesses as the Codex setup, adapted for Claude Code's architecture:
 
 - task breakdown on larger features
@@ -15,6 +22,37 @@ This plan targets the same weaknesses as the Codex setup, adapted for Claude Cod
 
 The controller stays `Claude Code`. MCP servers fill in the weak spots. Claude's built-in capabilities (web search, sub-agents, worktrees) replace some tools that Codex needs externally.
 
+## Why Task-Master Fits Claude
+
+For this repo, `task-master` is the best fit for Claude because Claude is especially good at ongoing task execution once the work is decomposed.
+
+What `task-master` adds well:
+
+- next-step selection
+- task expansion
+- backlog tracking
+- research subtasks during execution
+- active task state instead of just one-time planning
+
+That pairs well with Claude Code because Claude already has strong execution features:
+
+- slash commands
+- sub-agents
+- hooks
+- worktree isolation
+
+What to use `task-master` for:
+
+- active feature execution
+- incremental implementation
+- backlog grooming
+- “what should I do next?” workflows
+
+What not to expect from it:
+
+- the cleanest spec-first structure for major new features
+- a single shared planning system you can treat as the main artifact source across all agents
+
 ## Recommended Architecture
 
 ```text
@@ -23,6 +61,7 @@ You
      -> built-in WebSearch + WebFetch for current information
      -> built-in Agent tool for parallel sub-tasks
      -> built-in worktree isolation for safe experimentation
+     -> MCP: Context7 (versioned library/framework docs)
      -> MCP: Memory (knowledge graph persistence)
      -> MCP: Sequential Thinking (structured decomposition)
      -> MCP: Playwright (browser verification)
@@ -64,11 +103,17 @@ Why this order matters:
 
 ### Must-have
 
+`Context7`
+
+- current library and framework docs with cleaner version awareness than generic search alone
+- especially useful for React, Next.js, TypeScript, Vite, and migration questions
+
 `Memory MCP`
 
 - persistent project memory across sessions using a knowledge graph
 - store decisions, architecture notes, current status, commands, and next steps
 - Claude's built-in auto-memory is file-based and minimal — the MCP memory server adds structured entity/relation storage
+- pair it with `CURRENT_STATE.md` and `DECISIONS.md` for human-readable repo state
 
 `Sequential Thinking MCP`
 
@@ -105,6 +150,28 @@ Why this order matters:
 - do not run both Claude auto-memory and a separate knowledge graph on day one
 - pick one primary system; the MCP memory server is recommended for project-specific facts
 
+## Claude Extras To Lean On
+
+Claude Code already has several built-in features worth using before adding more tooling:
+
+- slash commands for repeatable workflows
+- sub-agents for parallel independent work
+- hooks for automation around edits and checks
+- worktree isolation for risky experiments
+
+These are part of why `task-master` fits better here than `spec-kit`.
+
+## Shared Add-ons
+
+These shared additions are now part of the repo direction:
+
+- `Context7` for current library/framework docs, already included in the installer/config path
+- `Repomix` for larger repo context when normal file-by-file context is not enough
+- `Promptfoo` for workflow evals and prompt regression testing, with a starter scaffold in `../evals/`
+- `CURRENT_STATE.md` and `DECISIONS.md` for lightweight file-based memory
+
+See `../shared/README.md` for the shared layer.
+
 ## Prerequisites
 
 Install these first:
@@ -131,7 +198,7 @@ What it does:
 
 - checks for `node`, `npm`, `npx`
 - creates the repo-local `.ai` memory directory
-- writes `.mcp.json` at the repo root for Claude Code project-level MCP config
+- writes `.mcp.json` at the repo root for Claude Code project-level MCP config, including `context7`, `memory`, and `sequential-thinking`
 - rewrites `.vscode/mcp.json` with the correct memory path for this repo
 - optionally configures GitHub MCP with PAT persistence
 
@@ -158,7 +225,7 @@ Useful examples:
 After running the installer:
 
 1. Open this repo in VS Code with the Claude extension or start `claude` in the terminal.
-2. Confirm MCP servers are available (memory, sequential-thinking, playwright).
+2. Confirm MCP servers are available (`context7`, `memory`, `sequential-thinking`, and optionally `playwright` and `github`).
 3. Test each server with a quick prompt.
 
 Good first prompts:
@@ -169,6 +236,10 @@ Use sequential-thinking to break down a small React task into phases and likely 
 
 ```text
 Use memory to store: "This project uses React 19 with TypeScript strict mode."
+```
+
+```text
+Use context7 to confirm the current Next.js guidance for App Router data fetching.
 ```
 
 ```text
@@ -183,10 +254,11 @@ For any non-trivial task:
 
 1. Use `sequential-thinking` to plan phases, risks, and file targets.
 2. Check `memory` for prior decisions that affect the plan.
-3. Break the plan into TodoWrite items.
-4. Execute phases, using sub-agents for independent work.
-5. Update `memory` with decisions after each phase.
-6. Verify with tests and Playwright after each phase.
+3. Read `CURRENT_STATE.md` and `DECISIONS.md` for durable repo context.
+4. Break the plan into TodoWrite items.
+5. Execute phases, using sub-agents for independent work.
+6. Update `memory` with decisions after each phase.
+7. Verify with tests and Playwright after each phase.
 
 ### Parallelism Pattern
 
@@ -241,11 +313,16 @@ Store concise, reusable facts:
 
 Read memory at the start of non-trivial tasks.
 
+Read these files too when the task affects the repo workflow or setup:
+
+- `CURRENT_STATE.md`
+- `DECISIONS.md`
+
 ## React-Specific Usage Rules
 
 1. Break work into UI structure, state, data flow, styling, browser behavior, and tests.
 2. Do not accept claims about browser behavior without Playwright verification.
-3. For library-version questions, use WebSearch before answering.
+3. For library-version questions, use Context7 or WebSearch before answering.
 4. Store accepted UI decisions in memory.
 5. If the task is larger than one component, use Sequential Thinking first.
 6. For independent component work, use parallel sub-agents.

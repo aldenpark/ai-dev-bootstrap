@@ -107,6 +107,14 @@ JSONEOF
 )")
 
   server_blocks+=("$(cat <<'JSONEOF'
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+JSONEOF
+)")
+
+  server_blocks+=("$(cat <<'JSONEOF'
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
@@ -262,6 +270,14 @@ JSONEOF
 )")
 
 vscode_servers+=("$(cat <<'JSONEOF'
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+JSONEOF
+)")
+
+vscode_servers+=("$(cat <<'JSONEOF'
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
@@ -336,7 +352,7 @@ cat <<'EOF'
 Next steps:
 1. Open this repo in VS Code with the Claude extension.
 2. Start a fresh Claude Code session in this workspace.
-3. Verify MCP servers load: memory, sequential-thinking, and playwright.
+3. Verify MCP servers load: memory, context7, sequential-thinking, and playwright.
 4. Test with: "Use sequential-thinking to break down a small task into phases."
 5. Test with: "Use memory to store a test decision."
 EOF

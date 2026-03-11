@@ -18,13 +18,21 @@ This repo is for building a repeatable local setup that improves common AI codin
 - `README.md`: repo overview and navigation
 - `codex/`: Codex-specific setup, docs, and installer
 - `claude/`: Claude-specific setup, docs, and installer
+- `shared/`: cross-agent tools and patterns that help both workflows
+- `evals/`: Promptfoo starter and comparison scaffolding
 - `.vscode/`: workspace-level editor configuration
 - `AGENTS.md`: repo-local Codex behavior rules for this repo
 - `CLAUDE.md`: repo-local Claude behavior rules for this repo
 
 ## Current Scope
 
-Both paths are now implemented:
+Both paths are now implemented, but they are not meant to be identical.
+
+Recommended split:
+
+- `codex/` is optimized around `spec-kit`
+- `claude/` is optimized around `task-master`
+- `shared/` contains tools that help both, such as docs, repo-context packing, and evals
 
 ### Codex workflow
 
@@ -34,6 +42,7 @@ Both paths are now implemented:
 - Sequential Thinking MCP
 - Playwright MCP
 - GitHub MCP
+- recommended planning layer: `spec-kit`
 
 ### Claude workflow
 
@@ -43,6 +52,7 @@ Both paths are now implemented:
 - Playwright MCP (browser verification)
 - GitHub MCP (optional)
 - Built-in: WebSearch, WebFetch, parallel sub-agents, worktree isolation
+- recommended execution layer: `task-master`
 
 ### Shared MCP servers
 
@@ -52,6 +62,24 @@ Both workflows use the same MCP servers for the core capabilities:
 - **Sequential Thinking** — structured task decomposition with revision
 - **Playwright** — browser-truth verification for UI work
 - **GitHub** — issue and PR context (optional)
+
+### Shared add-ons
+
+These are good next additions for both workflows:
+
+- `Context7` for version-specific library and framework docs
+- `Repomix` for AI-friendly repo packing when large context is needed
+- `Promptfoo` for evals and workflow regression testing
+- Aider-inspired patterns for repo maps and automatic verification after edits
+- lightweight file-based memory via `CURRENT_STATE.md` and `DECISIONS.md`
+
+Recommended order:
+
+1. `Context7`
+2. `Promptfoo`
+3. `Repomix`
+4. repo maps
+5. automatic verification
 
 ## Quick Start
 
@@ -66,6 +94,13 @@ Both workflows use the same MCP servers for the core capabilities:
 ```bash
 ./claude/scripts/install-claude-mcp-setup.sh
 ```
+
+### Shared extras
+
+- [Codex workflow notes](codex/README.md)
+- [Claude workflow notes](claude/README.md)
+- [Shared add-ons](shared/README.md)
+- [Promptfoo starter evals](evals/README.md)
 
 ### Common options
 
@@ -93,6 +128,10 @@ Codex-only:
 
 - `codex/README.md`: Codex setup plan and operating notes
 - `claude/README.md`: Claude setup plan and operating notes
+- `shared/README.md`: cross-agent tools and workflow additions
+- `evals/README.md`: Promptfoo starter evals
+- `CURRENT_STATE.md`: current repo state and likely next work
+- `DECISIONS.md`: durable repo decisions
 - `AGENTS.md`: repo-local behavior rules for Codex
 - `CLAUDE.md`: repo-local behavior rules for Claude
 - `codex/scripts/install-codex-mcp-setup.sh`: portable installer for Codex + MCP

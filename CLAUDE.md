@@ -6,6 +6,8 @@ This repo uses Claude Code as a primary controller alongside Codex. MCP servers 
 
 - Use `sequential-thinking` before multi-file work, refactors, or architectural changes. Do not skip decomposition on complex tasks.
 - Use `memory` to persist durable decisions, architecture notes, chosen ports, accepted constraints, and recurring commands. Do not dump raw chat transcripts into memory.
+- Read `CURRENT_STATE.md` and `DECISIONS.md` at the start of non-trivial repo work.
+- Update `CURRENT_STATE.md` and `DECISIONS.md` when durable repo-level state or decisions change.
 - Use web search or docs tools for current, versioned, or uncertain information.
 - Prefer the smallest patch that satisfies the requirement.
 - Use tests, lint, type checks, and browser verification as the final arbiters.
@@ -27,6 +29,11 @@ Store only concise, reusable facts:
 - project-specific patterns and gotchas
 
 Read memory at the start of non-trivial tasks to avoid repeating past mistakes or contradicting prior decisions.
+
+For human-readable repo state, use:
+
+- `CURRENT_STATE.md`
+- `DECISIONS.md`
 
 ## React and Browser Policy
 
@@ -58,6 +65,7 @@ For browser work, follow this pattern:
 ## Search and Docs
 
 - If the user asks for the latest or current behavior, search before answering.
+- Use `context7` for current library/framework/API documentation when it is a better fit than generic web search.
 - If a remote docs MCP is unavailable, say so briefly and fall back to official docs or search.
 
 ## Task Decomposition

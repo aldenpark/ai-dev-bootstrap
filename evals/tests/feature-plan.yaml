@@ -1,0 +1,32 @@
+- vars:
+    task: Add Context7 to the shared MCP setup and document it for both Codex and Claude.
+  assert:
+    - type: contains
+      value: Context7
+    - type: contains-any
+      value:
+        - README
+        - shared/README.md
+        - codex/README.md
+        - claude/README.md
+
+- vars:
+    task: Investigate why a React login button looks enabled but does nothing when clicked in the browser.
+  assert:
+    - type: contains
+      value: Playwright
+    - type: contains-any
+      value:
+        - browser
+        - rendered
+        - UI
+
+- vars:
+    task: Update the setup instructions for a Next.js version change where routing behavior may have changed recently.
+  assert:
+    - type: contains-any
+      value:
+        - docs
+        - search
+        - current
+        - version

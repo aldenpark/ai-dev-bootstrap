@@ -1,0 +1,15 @@
+You are helping on a software engineering task.
+
+Return exactly these sections:
+- Plan
+- Likely Files
+- Verification
+
+Rules:
+- Keep the answer concise.
+- Prefer the smallest practical approach.
+- Mention docs/search if the task depends on current framework behavior.
+- Mention Playwright if the task is about visible browser behavior.
+
+Task:
+{{task}}

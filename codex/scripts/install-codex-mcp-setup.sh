@@ -155,6 +155,7 @@ shell_startup_file="$(detect_shell_startup_file)"
 mkdir -p "$repo_root/.vscode"
 
 configure_mcp_server openaiDeveloperDocs --url https://developers.openai.com/mcp
+configure_mcp_server context7 -- npx -y @upstash/context7-mcp
 configure_mcp_server memory --env MEMORY_FILE_PATH="$memory_file" -- npx -y @modelcontextprotocol/server-memory
 configure_mcp_server sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
 configure_mcp_server playwright -- npx @playwright/mcp@latest
@@ -216,6 +217,13 @@ ${vscode_inputs_block}
       "type": "http",
       "url": "https://developers.openai.com/mcp"
     },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
     "playwright": {
       "command": "npx",
       "args": [
@@ -274,7 +282,7 @@ Next steps:
 1. Start a fresh `codex --search` session.
 2. If you use GitHub MCP, make sure the PAT env var exists before starting Codex.
 3. Reload VS Code if it was already open.
-4. In the Codex sidebar, test `memory`, `sequential-thinking`, and `openaiDeveloperDocs`.
+4. In the Codex sidebar, test `memory`, `context7`, `sequential-thinking`, and `openaiDeveloperDocs`.
 EOF
 
 if [ "$skip_github" -eq 0 ] && [ "$prompt_github_pat" -eq 1 ]; then

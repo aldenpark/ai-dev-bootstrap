@@ -4,6 +4,13 @@ This folder contains the current Codex-first implementation for `ai-dev-bootstra
 
 If you want the repo overview or the future multi-agent layout, start at the root `README.md`.
 
+Recommended workflow split for this repo:
+
+- `codex/` uses `spec-kit` as the preferred structure and planning layer
+- `claude/` uses `task-master` as the preferred execution and backlog layer
+- shared tools like Context7, Repomix, and Promptfoo live in `shared/`
+- shared repo state lives in `CURRENT_STATE.md` and `DECISIONS.md`
+
 This plan is optimized for the weaknesses you care about most:
 
 - task breakdown on larger features
@@ -14,12 +21,37 @@ This plan is optimized for the weaknesses you care about most:
 
 The controller stays `Codex`. MCP servers fill in the weak spots. A local model stays optional and comes later.
 
+## Why Spec-Kit Fits Codex
+
+For this repo, `spec-kit` is the best fit for Codex because it gives Codex explicit artifacts to work from:
+
+- feature specs
+- implementation plans
+- task breakdowns
+- phased implementation
+
+That matches Codex well because Codex benefits from clear written structure, explicit instructions, and planned execution.
+
+What to use `spec-kit` for:
+
+- new features
+- multi-file changes
+- refactors
+- migrations
+- anything where you want a spec before code
+
+What not to expect from it:
+
+- ongoing backlog management
+- “what should I do next?” task orchestration during day-to-day work
+
 ## Recommended Architecture
 
 ```text
 You
   -> Codex CLI or Codex IDE extension
      -> built-in search for current information
+     -> MCP: Context7
      -> MCP: OpenAI Developer Docs
      -> MCP: Memory
      -> MCP: Sequential Thinking
@@ -35,6 +67,28 @@ Why this is the right order:
 - better browser verification beats arguing about React UI bugs
 - better current docs/search beats stale answers
 
+## Parallelism
+
+Use parallelism for `context gathering` and `verification`, not for competing edits.
+
+Good uses:
+
+- read code, memory, docs, and GitHub context in parallel
+- inspect code and verify browser behavior in parallel for UI work
+- run independent checks like lint, typecheck, and tests in parallel when the commands are known
+
+Bad uses:
+
+- multiple agents editing the same files
+- multiple models trying to drive the same task
+- competing patches unless you explicitly want alternatives
+
+Rule:
+
+- one controller
+- one final writer
+- parallel readers and checkers when the work is independent
+
 ## What Each MCP Fixes
 
 ### Must-have
@@ -44,10 +98,16 @@ Why this is the right order:
 - current OpenAI and Codex docs
 - useful when the question is versioned or tool-specific
 
+`Context7`
+
+- current library and framework docs with better version awareness than generic web search
+- useful for React, Next.js, TypeScript, Vite, and migration questions
+
 `Memory MCP`
 
 - persistent project memory across sessions
-- store decisions, architecture notes, current status, commands, and next steps
+- store durable decisions, architecture notes, current status, commands, and next steps
+- pair it with `CURRENT_STATE.md` and `DECISIONS.md` for human-readable repo state
 
 `Playwright MCP`
 
@@ -79,6 +139,17 @@ Why this is the right order:
 `Second memory system`
 
 - do not run both a markdown memory bank and a separate knowledge graph memory system on day one
+
+## Shared Add-ons
+
+These shared additions are now part of the repo direction:
+
+- `Context7` for current library/framework docs, already included in the installer/config path
+- `Repomix` for larger repo context when normal file-by-file context is not enough
+- `Promptfoo` for workflow evals and prompt regression testing, with a starter scaffold in `../evals/`
+- `CURRENT_STATE.md` and `DECISIONS.md` for lightweight file-based memory
+
+See `../shared/README.md` for the shared layer.
 
 ## Prerequisites
 
@@ -166,6 +237,13 @@ Add the OpenAI docs server:
 codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp
 ```
 
+Add Context7:
+
+```bash
+codex mcp add context7 \
+  -- npx -y @upstash/context7-mcp
+```
+
 If you already added the older `docs.mcp.openai.com` endpoint, remove and re-add it:
 
 ```bash
@@ -227,10 +305,12 @@ codex --search
 Recommended operating rules:
 
 1. For anything spanning multiple files, ask Codex to use `sequential-thinking` first.
-2. For anything time-sensitive or version-specific, ask Codex to use search or docs before answering.
+2. For anything time-sensitive or version-specific, ask Codex to use search, Context7, or docs before answering.
 3. For any React or browser behavior question, ask Codex to verify with `playwright` before proposing a fix.
 4. After an important decision, ask Codex to update `memory`.
-5. Use tests, lint, and type checks as the final judge.
+5. For non-trivial repo work, expect Codex to read `CURRENT_STATE.md` and `DECISIONS.md` before it acts.
+6. Ask Codex to parallelize safe reads, lookups, and verification when that will reduce turnaround time.
+7. Use tests, lint, and type checks as the final judge.
 
 Prompt patterns that work well:
 
@@ -243,11 +323,23 @@ This may depend on current docs. Use search and the OpenAI docs MCP before answe
 ```
 
 ```text
+This depends on current React or Next.js behavior. Use Context7 first, then answer with the current version-specific guidance.
+```
+
+```text
 This is a React UI bug. Reproduce it with Playwright first, then propose the smallest fix.
 ```
 
 ```text
 After we agree on the approach, write the decision and affected files into memory.
+```
+
+```text
+Gather code context, docs, and GitHub issue details in parallel if they are independent, then give me one recommendation.
+```
+
+```text
+After the patch, run the available verification steps in parallel where safe, then summarize the failures first.
 ```
 
 ## Phase 4: Use It In VS Code
@@ -303,6 +395,7 @@ I added a starter config at:
 
 What it contains:
 
+- Context7
 - OpenAI Developer Docs
 - Playwright
 - Memory
@@ -317,7 +410,7 @@ For React and frontend work, use this policy:
 
 1. break work into UI structure, state, data flow, styling, browser behavior, and tests
 2. do not accept claims about browser behavior without Playwright verification
-3. for library-version questions, use search before answering
+3. for library-version questions, use Context7 or search before answering
 4. store accepted UI decisions in memory
 5. if the task is larger than one component, use Sequential Thinking first
 
@@ -383,12 +476,13 @@ This is the order I would actually use:
 
 1. Codex CLI + Codex IDE extension
 2. built-in `--search`
-3. OpenAI Developer Docs MCP
-4. Memory MCP
-5. Playwright MCP
-6. GitHub MCP
-7. Sequential Thinking MCP
-8. optional local model later
+3. Context7
+4. OpenAI Developer Docs MCP
+5. Memory MCP
+6. Playwright MCP
+7. GitHub MCP
+8. Sequential Thinking MCP
+9. optional local model later
 
 Why Playwright ahead of Sequential Thinking:
 
@@ -402,6 +496,9 @@ If you are doing architecture-heavy backend work for a week, swap 5 and 7.
 If you want the smallest useful setup, do only this:
 
 ```bash
+codex mcp add context7 \
+  -- npx -y @upstash/context7-mcp
+
 codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp
 
 codex mcp add memory \
@@ -420,7 +517,7 @@ codex --search
 
 That already gives you:
 
-- fresh docs and web search
+- version-aware library docs plus fresh web/docs search
 - persistent project memory
 - browser-backed React verification
 
@@ -429,6 +526,7 @@ That already gives you:
 After setup, verify these:
 
 - `codex mcp list` shows all expected servers
+- Context7 can answer current library/framework questions
 - Codex can answer current docs questions with search enabled
 - Playwright can open your local app
 - memory writes persist to `./.ai/memory.json`
