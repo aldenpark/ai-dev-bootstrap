@@ -1,12 +1,12 @@
-# CLAUDE.md
+# Global Claude Instructions
 
-This repo uses Claude Code as a primary controller alongside Codex. MCP servers are helpers, not decision-makers.
+MCP servers are helpers, not decision-makers.
 
 ## Core Policy
 
 - Use `sequential-thinking` before multi-file work, refactors, or architectural changes. Do not skip decomposition on complex tasks.
 - Use `memory` to persist durable decisions, architecture notes, chosen ports, accepted constraints, and recurring commands. Do not dump raw chat transcripts into memory.
-- Read `CURRENT_STATE.md` and `DECISIONS.md` at the start of non-trivial repo work.
+- Read `CURRENT_STATE.md` and `DECISIONS.md` at the start of non-trivial repo work, if they exist.
 - Update `CURRENT_STATE.md` and `DECISIONS.md` when durable repo-level state or decisions change.
 - Use web search or docs tools for current, versioned, or uncertain information.
 - Prefer the smallest patch that satisfies the requirement.

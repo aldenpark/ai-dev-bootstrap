@@ -6,7 +6,7 @@ If you want the repo overview or the multi-agent layout, start at the root `READ
 
 Recommended workflow split for this repo:
 
-- `claude/` uses `task-master` as the preferred execution and backlog layer
+- `claude/` uses `spec-kit` (GitHub Spec Kit) as the planning layer for spec-driven development
 - `codex/` uses `spec-kit` as the preferred structure and planning layer
 - shared tools like Context7, Repomix, and Promptfoo live in `shared/`
 - shared repo state lives in `CURRENT_STATE.md` and `DECISIONS.md`
@@ -22,36 +22,26 @@ This plan targets the same weaknesses as the Codex setup, adapted for Claude Cod
 
 The controller stays `Claude Code`. MCP servers fill in the weak spots. Claude's built-in capabilities (web search, sub-agents, worktrees) replace some tools that Codex needs externally.
 
-## Why Task-Master Fits Claude
+## Why Spec-Kit Fits Claude
 
-For this repo, `task-master` is the best fit for Claude because Claude is especially good at ongoing task execution once the work is decomposed.
+GitHub's [Spec Kit](https://github.com/github/spec-kit) is a CLI tool (`specify`) that enables spec-driven development. It pairs well with Claude because:
 
-What `task-master` adds well:
+- Claude benefits from clear written specs before implementation
+- `sequential-thinking` MCP handles in-session decomposition, while `specify` handles cross-session planning artifacts
+- specs become the source of truth that Claude reads before making changes
 
-- next-step selection
-- task expansion
-- backlog tracking
-- research subtasks during execution
-- active task state instead of just one-time planning
+What to use `spec-kit` for:
 
-That pairs well with Claude Code because Claude already has strong execution features:
+- new features spanning multiple files or components
+- refactors, migrations, or architectural changes
+- any task where you want a spec before code
 
-- slash commands
-- sub-agents
-- hooks
-- worktree isolation
+What to use Claude's built-in tools for:
 
-What to use `task-master` for:
-
-- active feature execution
-- incremental implementation
-- backlog grooming
-- “what should I do next?” workflows
-
-What not to expect from it:
-
-- the cleanest spec-first structure for major new features
-- a single shared planning system you can treat as the main artifact source across all agents
+- in-session task tracking (`TodoWrite`)
+- real-time decomposition (`sequential-thinking` MCP)
+- parallel execution of independent work (`Agent` tool)
+- “what should I do next?” within a session
 
 ## Recommended Architecture
 
@@ -65,7 +55,8 @@ You
      -> MCP: Memory (knowledge graph persistence)
      -> MCP: Sequential Thinking (structured decomposition)
      -> MCP: Playwright (browser verification)
-     -> MCP: GitHub (optional, for richer issue/PR context)
+     -> MCP: GitHub (issue/PR context via PAT)
+     -> CLI: specify (spec-driven development via GitHub Spec Kit)
 ```
 
 Why this order matters:
@@ -127,13 +118,13 @@ Why this order matters:
 - ideal for React app verification, UI bugs, regression checks, and flow validation
 - Claude Code has zero built-in browser capability — this is the biggest gap
 
-### Optional
+### Strongly recommended
 
 `GitHub MCP`
 
 - issues, pull requests, repo context, and code review flow
-- Claude Code can already use `gh` CLI via Bash, so this is a convenience upgrade
-- most useful if you work heavily from tickets
+- authenticated via Personal Access Token (PAT)
+- Claude Code can already use `gh` CLI via Bash, but the MCP provides richer structured access
 
 ## What Claude Does Not Need (Skip These)
 
@@ -159,7 +150,7 @@ Claude Code already has several built-in features worth using before adding more
 - hooks for automation around edits and checks
 - worktree isolation for risky experiments
 
-These are part of why `task-master` fits better here than `spec-kit`.
+These built-in features complement `spec-kit` and the MCP stack well.
 
 ## Shared Add-ons
 
@@ -190,33 +181,49 @@ claude --version
 
 ## Phase 1: Run The Installer
 
+### Global install (recommended)
+
+Installs MCP servers, global Claude rules, and the `specify` CLI for all projects:
+
+```bash
+./claude/scripts/install-claude-mcp-setup.sh --global
+```
+
+What it does:
+
+- installs MCP servers to `~/.claude.json` (Claude Code user scope — available in all projects)
+- merges MCP servers into VS Code user-level `settings.json`
+- installs global Claude rules to `~/.claude/CLAUDE.md`
+- installs the `specify` CLI (GitHub Spec Kit) via `uv`
+- prompts for a GitHub PAT if not already configured (persists to `~/.zprofile`)
+
+### Project-only install
+
+Scoped to the current repo only:
+
 ```bash
 ./claude/scripts/install-claude-mcp-setup.sh
 ```
 
 What it does:
 
-- checks for `node`, `npm`, `npx`
+- writes `.mcp.json` at the repo root for Claude Code project-level MCP config
+- writes `.vscode/mcp.json` for VS Code workspace MCP config
 - creates the repo-local `.ai` memory directory
-- writes `.mcp.json` at the repo root for Claude Code project-level MCP config, including `context7`, `memory`, and `sequential-thinking`
-- rewrites `.vscode/mcp.json` with the correct memory path for this repo
-- optionally configures GitHub MCP with PAT persistence
 
-Useful examples:
+### Options
 
 ```bash
-./claude/scripts/install-claude-mcp-setup.sh --skip-github
-```
+# Skip GitHub MCP
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-github
 
-```bash
-./claude/scripts/install-claude-mcp-setup.sh --prompt-github-pat
-```
+# Provide GitHub PAT directly (no prompt)
+./claude/scripts/install-claude-mcp-setup.sh --global --github-pat ghp_yourtoken
 
-```bash
-./claude/scripts/install-claude-mcp-setup.sh --skip-playwright
-```
+# Skip Playwright MCP
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-playwright
 
-```bash
+# Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/project-name"
 ```
 
@@ -224,8 +231,8 @@ Useful examples:
 
 After running the installer:
 
-1. Open this repo in VS Code with the Claude extension or start `claude` in the terminal.
-2. Confirm MCP servers are available (`context7`, `memory`, `sequential-thinking`, and optionally `playwright` and `github`).
+1. Restart VS Code or start a new Claude Code session.
+2. Run `/mcp` to confirm MCP servers are connected: `context7`, `memory`, `sequential-thinking`, `playwright`, and `github`.
 3. Test each server with a quick prompt.
 
 Good first prompts:
@@ -343,8 +350,9 @@ If Playwright fails:
 
 If GitHub MCP fails:
 
-- verify the PAT and its scopes
-- check the env var is set in the current shell
+- verify the PAT and its scopes (needs repo, issues, pull requests access)
+- re-run the installer with `--global` to re-enter the PAT
+- check `~/.claude.json` has a `github` entry with `Authorization` header
 
 If memory feels noisy:
 
@@ -354,8 +362,10 @@ If memory feels noisy:
 ## Sources
 
 - Claude Code docs: https://docs.anthropic.com/en/docs/claude-code
+- GitHub Spec Kit: https://github.com/github/spec-kit
 - Playwright MCP: https://github.com/microsoft/playwright-mcp
 - GitHub MCP server: https://github.com/github/github-mcp-server
 - MCP reference servers: https://github.com/modelcontextprotocol/servers
 - MCP memory server: https://www.npmjs.com/package/@modelcontextprotocol/server-memory
 - MCP sequential thinking: https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking
+- Context7: https://github.com/upstash/context7

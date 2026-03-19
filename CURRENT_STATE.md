@@ -5,13 +5,18 @@
 This repo is building a repeatable AI coding environment for:
 
 - `Codex` with a `spec-kit`-oriented workflow
-- `Claude` with a `task-master`-oriented workflow
+- `Claude` with a `spec-kit`-oriented workflow (GitHub Spec Kit)
 - shared MCP and workflow add-ons that improve both
 
 ## Implemented
 
 - Codex installer and workflow docs
 - Claude installer and workflow docs
+- Claude `--global` install: MCP servers to `~/.claude.json`, global rules to `~/.claude/CLAUDE.md`, VS Code user settings
+- Claude MCP servers: memory, context7, sequential-thinking, playwright, github (PAT-based)
+- GitHub Spec Kit (`specify` CLI) installed globally via `uv` for spec-driven development
+- Global Claude rules template at `claude/templates/global-CLAUDE.md`
+- GitHub PAT auto-detection (env var > existing config > interactive prompt > skip)
 - synced top-level setup guide in `Local AI Coding Environment Setup.md`
 - Context7 added to the Codex and Claude installer/config path
 - shared documentation for Context7, Repomix, Promptfoo, and Aider-inspired patterns
@@ -28,6 +33,6 @@ This repo is building a repeatable AI coding environment for:
 
 ## Next Likely Work
 
-- install and validate `Context7`
 - expand `evals/` with real project-specific tasks
-- decide how much of `spec-kit` and `task-master` should be automated in this repo
+- validate `specify` workflow end-to-end on a real feature
+- add Codex `--global` install support to match Claude installer

@@ -4,20 +4,20 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../.." && pwd)"
 
-memory_dir="$repo_root/.ai"
-github_pat_env_var="GITHUB_MCP_PAT"
+memory_dir=""
+github_pat=""
 skip_github=0
-prompt_github_pat=0
 skip_playwright=0
+install_global=0
 
 usage() {
   cat <<'EOF'
 Usage: ./claude/scripts/install-claude-mcp-setup.sh [options]
 
 Options:
+  --global                       Install MCP servers to user-level config (available in all projects).
   --memory-dir PATH              Override the Memory MCP directory.
-  --github-pat-env-var NAME      Env var name used by the GitHub MCP.
-  --prompt-github-pat            Prompt for the GitHub PAT and save it to the detected shell startup file.
+  --github-pat TOKEN              GitHub Personal Access Token for GitHub MCP server.
   --skip-github                  Skip GitHub MCP configuration.
   --skip-playwright              Skip Playwright MCP configuration.
   -h, --help                     Show this help message.
@@ -33,69 +33,10 @@ require_command() {
   fi
 }
 
-escape_for_single_quotes() {
-  printf "%s" "$1" | sed "s/'/'\\\\''/g"
-}
-
-detect_shell_startup_file() {
-  local shell_name
-
-  shell_name="$(basename "${SHELL:-}")"
-
-  case "$shell_name" in
-    zsh)
-      printf '%s\n' "$HOME/.zprofile"
-      ;;
-    bash)
-      if [ -f "$HOME/.bash_profile" ]; then
-        printf '%s\n' "$HOME/.bash_profile"
-      else
-        printf '%s\n' "$HOME/.profile"
-      fi
-      ;;
-    *)
-      printf '%s\n' "$HOME/.profile"
-      ;;
-  esac
-}
-
-persist_env_var_to_startup_file() {
-  local env_name="$1"
-  local env_value="$2"
-  local startup_file="$3"
-  local marker_begin="# >>> claude-github-pat >>>"
-  local marker_end="# <<< claude-github-pat <<<"
-  local escaped_value
-  local temp_file
-
-  escaped_value="$(escape_for_single_quotes "$env_value")"
-  touch "$startup_file"
-  temp_file="$(mktemp)"
-  trap 'rm -f "$temp_file"' EXIT
-
-  awk -v begin="$marker_begin" -v end="$marker_end" '
-    $0 == begin { skip=1; next }
-    $0 == end { skip=0; next }
-    skip != 1 { print }
-  ' "$startup_file" > "$temp_file"
-
-  {
-    cat "$temp_file"
-    printf '\n%s\n' "$marker_begin"
-    printf "export %s='%s'\n" "$env_name" "$escaped_value"
-    printf '%s\n' "$marker_end"
-  } > "$startup_file"
-
-  rm -f "$temp_file"
-  trap - EXIT
-}
-
-write_claude_mcp_config() {
-  # Collect server blocks into an array, then join with commas.
-  # This avoids fragile comma placement when optional servers are skipped.
-  local -a server_blocks=()
-
-  server_blocks+=("$(cat <<JSONEOF
+build_server_blocks() {
+  # Builds MCP server block JSON fragments into the global SERVER_BLOCKS array.
+  # Caller must declare: local -a SERVER_BLOCKS=()
+  SERVER_BLOCKS+=("$(cat <<JSONEOF
     "memory": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
@@ -106,7 +47,7 @@ write_claude_mcp_config() {
 JSONEOF
 )")
 
-  server_blocks+=("$(cat <<'JSONEOF'
+  SERVER_BLOCKS+=("$(cat <<'JSONEOF'
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
@@ -114,7 +55,7 @@ JSONEOF
 JSONEOF
 )")
 
-  server_blocks+=("$(cat <<'JSONEOF'
+  SERVER_BLOCKS+=("$(cat <<'JSONEOF'
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
@@ -123,7 +64,7 @@ JSONEOF
 )")
 
   if [ "$skip_playwright" -eq 0 ]; then
-    server_blocks+=("$(cat <<'JSONEOF'
+    SERVER_BLOCKS+=("$(cat <<'JSONEOF'
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@latest"]
@@ -133,28 +74,37 @@ JSONEOF
   fi
 
   if [ "$skip_github" -eq 0 ]; then
-    server_blocks+=("$(cat <<JSONEOF
+    SERVER_BLOCKS+=("$(cat <<JSONEOF
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/",
       "headers": {
-        "Authorization": "Bearer \${$github_pat_env_var}"
+        "Authorization": "Bearer $github_pat"
       }
     }
 JSONEOF
 )")
   fi
+}
 
-  # Join blocks with ",\n"
+join_blocks() {
+  # Joins SERVER_BLOCKS array elements with ",\n"
   local joined=""
-  for i in "${!server_blocks[@]}"; do
+  for i in "${!SERVER_BLOCKS[@]}"; do
     if [ "$i" -gt 0 ]; then
       joined+=$',\n'
     fi
-    joined+="${server_blocks[$i]}"
+    joined+="${SERVER_BLOCKS[$i]}"
   done
+  printf '%s' "$joined"
+}
 
-  # Write project-level .mcp.json (preferred for per-repo config)
+write_claude_mcp_config() {
+  local -a SERVER_BLOCKS=()
+  build_server_blocks
+  local joined
+  joined="$(join_blocks)"
+
   cat > "$repo_root/.mcp.json" <<EOF
 {
   "mcpServers": {
@@ -164,6 +114,151 @@ $joined
 EOF
 
   printf 'Wrote Claude MCP config to: %s\n' "$repo_root/.mcp.json"
+}
+
+merge_json_mcpservers() {
+  # Merges mcpServers into an existing JSON settings file using python3.
+  # Usage: merge_json_mcpservers <target_file> <key_name> <servers_json>
+  local target_file="$1"
+  local key_name="$2"
+  local servers_json="$3"
+
+  python3 -c "
+import json, sys, os
+
+target = sys.argv[1]
+key = sys.argv[2]
+servers = json.loads(sys.argv[3])
+
+if os.path.exists(target):
+    with open(target) as f:
+        data = json.load(f)
+else:
+    data = {}
+
+if key not in data:
+    data[key] = {}
+data[key].update(servers)
+
+with open(target, 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" "$target_file" "$key_name" "$servers_json"
+}
+
+build_servers_json() {
+  # Builds a JSON object of MCP server configs suitable for merging.
+  local -a parts=()
+
+  parts+=("$(cat <<JSONEOF
+"memory": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-memory"],
+  "env": {
+    "MEMORY_FILE_PATH": "$memory_file"
+  }
+}
+JSONEOF
+)")
+
+  parts+=("$(cat <<'JSONEOF'
+"context7": {
+  "command": "npx",
+  "args": ["-y", "@upstash/context7-mcp"]
+}
+JSONEOF
+)")
+
+  parts+=("$(cat <<'JSONEOF'
+"sequential-thinking": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+}
+JSONEOF
+)")
+
+  if [ "$skip_playwright" -eq 0 ]; then
+    parts+=("$(cat <<'JSONEOF'
+"playwright": {
+  "command": "npx",
+  "args": ["@playwright/mcp@latest"]
+}
+JSONEOF
+)")
+  fi
+
+  if [ "$skip_github" -eq 0 ]; then
+    parts+=("$(cat <<JSONEOF
+"github": {
+  "type": "http",
+  "url": "https://api.githubcopilot.com/mcp/",
+  "headers": {
+    "Authorization": "Bearer $github_pat"
+  }
+}
+JSONEOF
+)")
+  fi
+
+  local joined=""
+  for i in "${!parts[@]}"; do
+    if [ "$i" -gt 0 ]; then
+      joined+=","
+    fi
+    joined+="${parts[$i]}"
+  done
+  printf '{%s}' "$joined"
+}
+
+claude_mcp_set_json() {
+  # Idempotent add via JSON. Usage: claude_mcp_set_json <name> <json>
+  local name="$1" json="$2"
+  claude mcp remove -s user "$name" 2>/dev/null || true
+  claude mcp add-json -s user "$name" "$json"
+}
+
+write_global_claude_config() {
+  require_command claude
+
+  # Use add-json for all servers — avoids argument-ordering issues with `claude mcp add`
+  claude_mcp_set_json memory "{\"type\":\"stdio\",\"command\":\"npx\",\"args\":[\"-y\",\"@modelcontextprotocol/server-memory\"],\"env\":{\"MEMORY_FILE_PATH\":\"$memory_file\"}}"
+
+  claude_mcp_set_json context7 '{"type":"stdio","command":"npx","args":["-y","@upstash/context7-mcp"]}'
+
+  claude_mcp_set_json sequential-thinking '{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"]}'
+
+  if [ "$skip_playwright" -eq 0 ]; then
+    claude_mcp_set_json playwright '{"type":"stdio","command":"npx","args":["@playwright/mcp@latest"]}'
+  fi
+
+  if [ "$skip_github" -eq 0 ]; then
+    claude_mcp_set_json github "{\"type\":\"http\",\"url\":\"https://api.githubcopilot.com/mcp/\",\"headers\":{\"Authorization\":\"Bearer ${github_pat}\"}}"
+  fi
+
+  printf 'Added MCP servers to Claude Code (user scope).\n'
+}
+
+write_global_vscode_config() {
+  local vscode_settings
+  case "$(uname)" in
+    Darwin)
+      vscode_settings="$HOME/Library/Application Support/Code/User/settings.json"
+      ;;
+    Linux)
+      vscode_settings="$HOME/.config/Code/User/settings.json"
+      ;;
+    *)
+      printf 'Unsupported OS for VS Code global config. Skipping.\n' >&2
+      return
+      ;;
+  esac
+
+  local servers_json
+  servers_json="$(build_servers_json)"
+
+  mkdir -p "$(dirname "$vscode_settings")"
+  merge_json_mcpservers "$vscode_settings" "mcp" "$servers_json"
+  printf 'Merged MCP servers into: %s\n' "$vscode_settings"
 }
 
 while (($#)); do
@@ -176,17 +271,17 @@ while (($#)); do
       memory_dir="$2"
       shift 2
       ;;
-    --github-pat-env-var)
+    --global)
+      install_global=1
+      shift
+      ;;
+    --github-pat)
       if [ "$#" -lt 2 ]; then
-        printf '%s\n' '--github-pat-env-var requires a name' >&2
+        printf '%s\n' '--github-pat requires a token' >&2
         exit 1
       fi
-      github_pat_env_var="$2"
+      github_pat="$2"
       shift 2
-      ;;
-    --prompt-github-pat)
-      prompt_github_pat=1
-      shift
       ;;
     --skip-github)
       skip_github=1
@@ -212,53 +307,133 @@ require_command node
 require_command npm
 require_command npx
 
+# Ensure pyenv is available if installed (scripts may not inherit shell init)
+if [ -d "$HOME/.pyenv" ] && ! command -v pyenv >/dev/null 2>&1; then
+  export PYENV_ROOT="$HOME/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+fi
+
+# Install spec-kit CLI (specify) via uv if not already present
+if command -v uv >/dev/null 2>&1 || [ -x "$HOME/.local/bin/uv" ]; then
+  export PATH="$HOME/.local/bin:$PATH"
+  if ! command -v specify >/dev/null 2>&1; then
+    printf '\nInstalling spec-kit CLI (specify)...\n'
+    uv tool install specify-cli --from git+https://github.com/github/spec-kit.git 2>&1 || {
+      printf 'WARNING: Failed to install spec-kit CLI. You can install it manually later:\n' >&2
+      printf '  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git\n' >&2
+    }
+  else
+    printf 'spec-kit CLI (specify) already installed.\n'
+  fi
+else
+  printf '\nNote: uv not found. To install spec-kit CLI, first install uv:\n'
+  printf '  curl -LsSf https://astral.sh/uv/install.sh | sh\n'
+  printf 'Then install spec-kit:\n'
+  printf '  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git\n'
+fi
+
+# Resolve GitHub PAT: flag > env var > existing config > prompt > skip
+if [ "$skip_github" -eq 0 ] && [ -z "$github_pat" ]; then
+  if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+    github_pat="$GITHUB_PERSONAL_ACCESS_TOKEN"
+  elif [ -n "${GITHUB_PAT:-}" ]; then
+    github_pat="$GITHUB_PAT"
+  else
+    # Check if already configured in ~/.claude.json
+    existing_pat="$(python3 -c "
+import json, os, sys
+p = os.path.expanduser('~/.claude.json')
+if os.path.exists(p):
+    d = json.load(open(p))
+    h = d.get('mcpServers',{}).get('github',{}).get('headers',{}).get('Authorization','')
+    if h.startswith('Bearer '):
+        print(h[7:])
+" 2>/dev/null || true)"
+    if [ -n "$existing_pat" ]; then
+      github_pat="$existing_pat"
+      printf 'Found existing GitHub PAT in ~/.claude.json.\n'
+    else
+      printf '\nGitHub MCP requires a Personal Access Token.\n'
+      printf 'Create one at: https://github.com/settings/personal-access-tokens/new\n'
+      printf 'Enter GitHub PAT (or press Enter to skip GitHub MCP): '
+      read -r github_pat
+      if [ -z "$github_pat" ]; then
+        printf 'Skipping GitHub MCP.\n'
+        skip_github=1
+      else
+        # Persist PAT to shell profile so future runs detect it
+        shell_profile="$HOME/.zprofile"
+        if ! grep -q 'GITHUB_PAT' "$shell_profile" 2>/dev/null; then
+          printf '\nexport GITHUB_PAT="%s"\n' "$github_pat" >> "$shell_profile"
+          printf 'Saved GITHUB_PAT to %s\n' "$shell_profile"
+        fi
+      fi
+    fi
+  fi
+fi
+
+# Default memory_dir based on install scope
+if [ -z "$memory_dir" ]; then
+  if [ "$install_global" -eq 1 ]; then
+    memory_dir="$HOME/.ai"
+  else
+    memory_dir="$repo_root/.ai"
+  fi
+fi
+
 mkdir -p "$memory_dir"
 memory_dir="$(cd "$memory_dir" && pwd)"
 memory_file="$memory_dir/memory.json"
-shell_startup_file="$(detect_shell_startup_file)"
 
-if [ "$skip_github" -eq 0 ] && [ "$prompt_github_pat" -eq 1 ]; then
-  if [ ! -t 0 ]; then
-    printf 'Cannot prompt for %s without an interactive terminal.\n' "$github_pat_env_var" >&2
-    exit 1
+if [ "$install_global" -eq 1 ]; then
+  write_global_claude_config
+  write_global_vscode_config
+
+  # Install global CLAUDE.md rules
+  global_claude_md="$HOME/.claude/CLAUDE.md"
+  template_claude_md="$script_dir/../templates/global-CLAUDE.md"
+  if [ -f "$template_claude_md" ]; then
+    mkdir -p "$(dirname "$global_claude_md")"
+    cp "$template_claude_md" "$global_claude_md"
+    printf 'Installed global Claude rules to: %s\n' "$global_claude_md"
+  else
+    printf 'WARNING: Template not found at %s — skipping global CLAUDE.md\n' "$template_claude_md" >&2
   fi
 
-  printf 'Enter GitHub PAT for %s: ' "$github_pat_env_var" >&2
-  read -r -s github_pat_value
-  printf '\n' >&2
+  printf '\nGlobal setup complete.\n\n'
+  printf 'Memory file: %s\n' "$memory_file"
+  printf 'Claude config: %s\n' "$HOME/.claude.json"
+  printf 'Global rules: %s\n' "$HOME/.claude/CLAUDE.md"
 
-  if [ -z "$github_pat_value" ]; then
-    printf 'GitHub PAT cannot be empty when --prompt-github-pat is used.\n' >&2
-    exit 1
+  case "$(uname)" in
+    Darwin) printf 'VS Code settings: %s\n' "$HOME/Library/Application Support/Code/User/settings.json" ;;
+    Linux) printf 'VS Code settings: %s\n' "$HOME/.config/Code/User/settings.json" ;;
+  esac
+
+  if [ "$skip_github" -eq 0 ]; then
+    printf 'GitHub MCP: configured with PAT\n'
   fi
 
-  persist_env_var_to_startup_file "$github_pat_env_var" "$github_pat_value" "$shell_startup_file"
-  export "$github_pat_env_var=$github_pat_value"
-fi
+  cat <<'EOF'
 
-write_claude_mcp_config
+Next steps:
+1. Open any project in VS Code or start Claude Code in any directory.
+2. MCP servers should be available globally: memory, context7, sequential-thinking, playwright, and github.
+3. Test with: "Use sequential-thinking to break down a small task into phases."
+4. Test with: "Use memory to store a test decision."
+5. For spec-driven development, install spec-kit CLI separately: uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+EOF
 
-# Update .vscode/mcp.json for VS Code Claude extension compatibility
-mkdir -p "$repo_root/.vscode"
-
-# Build VS Code inputs block
-if [ "$skip_github" -eq 0 ]; then
-  vscode_inputs_block='  "inputs": [
-    {
-      "type": "promptString",
-      "id": "github_mcp_pat",
-      "description": "GitHub PAT for the remote GitHub MCP server",
-      "password": true
-    }
-  ],'
 else
-  vscode_inputs_block='  "inputs": [],'
-fi
+  write_claude_mcp_config
 
-# Build VS Code server blocks array, then join with commas
-vscode_servers=()
+  # Update .vscode/mcp.json for VS Code Claude extension compatibility
+  mkdir -p "$repo_root/.vscode"
 
-vscode_servers+=("$(cat <<JSONEOF
+  # Build VS Code server blocks array, then join with commas
+  vscode_servers=()
+
+  vscode_servers+=("$(cat <<JSONEOF
     "memory": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
@@ -269,7 +444,7 @@ vscode_servers+=("$(cat <<JSONEOF
 JSONEOF
 )")
 
-vscode_servers+=("$(cat <<'JSONEOF'
+  vscode_servers+=("$(cat <<'JSONEOF'
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
@@ -277,7 +452,7 @@ vscode_servers+=("$(cat <<'JSONEOF'
 JSONEOF
 )")
 
-vscode_servers+=("$(cat <<'JSONEOF'
+  vscode_servers+=("$(cat <<'JSONEOF'
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
@@ -285,82 +460,63 @@ vscode_servers+=("$(cat <<'JSONEOF'
 JSONEOF
 )")
 
-if [ "$skip_playwright" -eq 0 ]; then
-  vscode_servers+=("$(cat <<'JSONEOF'
+  if [ "$skip_playwright" -eq 0 ]; then
+    vscode_servers+=("$(cat <<'JSONEOF'
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@latest"]
     }
 JSONEOF
 )")
-fi
+  fi
 
-vscode_servers+=("$(cat <<'JSONEOF'
-    "openaiDeveloperDocs": {
-      "type": "http",
-      "url": "https://developers.openai.com/mcp"
-    }
-JSONEOF
-)")
-
-if [ "$skip_github" -eq 0 ]; then
-  vscode_servers+=("$(cat <<'JSONEOF'
+  if [ "$skip_github" -eq 0 ]; then
+    vscode_servers+=("$(cat <<JSONEOF
     "github": {
-      "type": "http",
       "url": "https://api.githubcopilot.com/mcp/",
       "headers": {
-        "Authorization": "Bearer ${input:github_mcp_pat}"
+        "Authorization": "Bearer $github_pat"
       }
     }
 JSONEOF
 )")
-fi
-
-# Join blocks with ",\n"
-vscode_joined=""
-for i in "${!vscode_servers[@]}"; do
-  if [ "$i" -gt 0 ]; then
-    vscode_joined+=$',\n'
   fi
-  vscode_joined+="${vscode_servers[$i]}"
-done
 
-cat > "$repo_root/.vscode/mcp.json" <<EOF
+  # Join blocks with ",\n"
+  vscode_joined=""
+  for i in "${!vscode_servers[@]}"; do
+    if [ "$i" -gt 0 ]; then
+      vscode_joined+=$',\n'
+    fi
+    vscode_joined+="${vscode_servers[$i]}"
+  done
+
+  cat > "$repo_root/.vscode/mcp.json" <<EOF
 {
-${vscode_inputs_block}
   "servers": {
 $vscode_joined
   }
 }
 EOF
 
-printf '\nSetup complete.\n\n'
-printf 'Repo root: %s\n' "$repo_root"
-printf 'Memory file: %s\n' "$memory_file"
-printf 'Claude MCP config: %s\n' "$repo_root/.mcp.json"
-printf 'VS Code MCP config: %s\n' "$repo_root/.vscode/mcp.json"
+  printf '\nSetup complete.\n\n'
+  printf 'Repo root: %s\n' "$repo_root"
+  printf 'Memory file: %s\n' "$memory_file"
+  printf 'Claude MCP config: %s\n' "$repo_root/.mcp.json"
+  printf 'VS Code MCP config: %s\n' "$repo_root/.vscode/mcp.json"
 
-if [ "$skip_github" -eq 0 ]; then
-  printf 'GitHub env var: %s\n' "$github_pat_env_var"
-  if [ "$prompt_github_pat" -eq 1 ]; then
-    printf 'GitHub PAT saved to: %s\n' "$shell_startup_file"
+  if [ "$skip_github" -eq 0 ]; then
+    printf 'GitHub MCP: configured with PAT\n'
   fi
-fi
 
-cat <<'EOF'
+  cat <<'EOF'
 
 Next steps:
 1. Open this repo in VS Code with the Claude extension.
 2. Start a fresh Claude Code session in this workspace.
-3. Verify MCP servers load: memory, context7, sequential-thinking, and playwright.
+3. Verify MCP servers load: memory, context7, sequential-thinking, playwright, and github.
 4. Test with: "Use sequential-thinking to break down a small task into phases."
 5. Test with: "Use memory to store a test decision."
-EOF
-
-if [ "$skip_github" -eq 0 ] && [ "$prompt_github_pat" -eq 1 ]; then
-  cat <<EOF
-
-GitHub PAT note:
-- Open a new terminal or run \`source ${shell_startup_file}\` before starting a new Claude session outside this script.
+6. For spec-driven development, install spec-kit CLI separately: uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
 EOF
 fi

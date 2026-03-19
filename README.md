@@ -31,7 +31,7 @@ Both paths are now implemented, but they are not meant to be identical.
 Recommended split:
 
 - `codex/` is optimized around `spec-kit`
-- `claude/` is optimized around `task-master`
+- `claude/` is optimized around `spec-kit` (GitHub Spec Kit)
 - `shared/` contains tools that help both, such as docs, repo-context packing, and evals
 
 ### Codex workflow
@@ -47,12 +47,13 @@ Recommended split:
 ### Claude workflow
 
 - Claude Code CLI and VS Code extension
+- Context7 MCP (versioned library/framework docs)
 - Memory MCP (knowledge graph persistence)
 - Sequential Thinking MCP (structured decomposition)
 - Playwright MCP (browser verification)
-- GitHub MCP (optional)
+- GitHub MCP (issue/PR context via PAT)
 - Built-in: WebSearch, WebFetch, parallel sub-agents, worktree isolation
-- recommended execution layer: `task-master`
+- planning layer: `spec-kit` (GitHub Spec Kit `specify` CLI)
 
 ### Shared MCP servers
 
@@ -92,6 +93,10 @@ Recommended order:
 ### Claude
 
 ```bash
+# Global install (recommended — available in all projects)
+./claude/scripts/install-claude-mcp-setup.sh --global
+
+# Project-only install
 ./claude/scripts/install-claude-mcp-setup.sh
 ```
 
@@ -104,18 +109,29 @@ Recommended order:
 
 ### Common options
 
-Both installers support:
+Claude installer options:
 
 ```bash
 # Skip GitHub MCP
-./claude/scripts/install-claude-mcp-setup.sh --skip-github
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-github
 
-# Prompt for GitHub PAT and save to shell startup file
-./claude/scripts/install-claude-mcp-setup.sh --prompt-github-pat
+# Provide GitHub PAT directly (no interactive prompt)
+./claude/scripts/install-claude-mcp-setup.sh --global --github-pat ghp_yourtoken
+
+# Skip Playwright MCP
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-playwright
 
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/my-project"
 ```
+
+Without `--global`, configs are written to the current repo only (`.mcp.json` and `.vscode/mcp.json`). With `--global`:
+
+- MCP servers are added to `~/.claude.json` (Claude Code user scope)
+- MCP servers are merged into VS Code user-level `settings.json`
+- Global Claude rules are installed to `~/.claude/CLAUDE.md`
+- `specify` CLI (GitHub Spec Kit) is installed via `uv`
+- GitHub PAT is auto-detected from env/config or prompted interactively
 
 Codex-only:
 
@@ -128,6 +144,7 @@ Codex-only:
 
 - `codex/README.md`: Codex setup plan and operating notes
 - `claude/README.md`: Claude setup plan and operating notes
+- `claude/templates/global-CLAUDE.md`: template for global Claude rules (installed to `~/.claude/CLAUDE.md`)
 - `shared/README.md`: cross-agent tools and workflow additions
 - `evals/README.md`: Promptfoo starter evals
 - `CURRENT_STATE.md`: current repo state and likely next work
@@ -135,7 +152,7 @@ Codex-only:
 - `AGENTS.md`: repo-local behavior rules for Codex
 - `CLAUDE.md`: repo-local behavior rules for Claude
 - `codex/scripts/install-codex-mcp-setup.sh`: portable installer for Codex + MCP
-- `claude/scripts/install-claude-mcp-setup.sh`: portable installer for Claude + MCP
+- `claude/scripts/install-claude-mcp-setup.sh`: portable installer for Claude + MCP (supports `--global`)
 - `.mcp.json`: Claude Code project-level MCP configuration
 - `.vscode/mcp.json`: VS Code workspace MCP configuration
 
