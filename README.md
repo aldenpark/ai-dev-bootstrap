@@ -53,6 +53,9 @@ Recommended split:
 - Playwright MCP (browser verification)
 - GitHub MCP (issue/PR context via PAT)
 - Built-in: WebSearch, WebFetch, parallel sub-agents, worktree isolation
+- Modular rules: communication, code-style, testing, git (`~/.claude/rules/`)
+- Skills: frontend, python, csharp (`~/.claude/skills/`)
+- Optional plugins: MemPalace (persistent memory palace), Caveman (terse output)
 - planning layer: `spec-kit` (GitHub Spec Kit `specify` CLI)
 
 ### Shared MCP servers
@@ -121,6 +124,13 @@ Claude installer options:
 # Skip Playwright MCP
 ./claude/scripts/install-claude-mcp-setup.sh --global --skip-playwright
 
+# Skip rules or skills
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-rules
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-skills
+
+# Install optional plugins
+./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman
+
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/my-project"
 ```
@@ -145,6 +155,8 @@ Codex-only:
 - `codex/README.md`: Codex setup plan and operating notes
 - `claude/README.md`: Claude setup plan and operating notes
 - `claude/templates/global-CLAUDE.md`: template for global Claude rules (installed to `~/.claude/CLAUDE.md`)
+- `claude/templates/rules/`: modular behavior rules (installed to `~/.claude/rules/`)
+- `claude/templates/skills/`: language-specific skills (installed to `~/.claude/skills/`)
 - `shared/README.md`: cross-agent tools and workflow additions
 - `evals/README.md`: Promptfoo starter evals
 - `CURRENT_STATE.md`: current repo state and likely next work

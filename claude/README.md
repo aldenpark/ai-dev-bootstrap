@@ -57,6 +57,10 @@ You
      -> MCP: Playwright (browser verification)
      -> MCP: GitHub (issue/PR context via PAT)
      -> CLI: specify (spec-driven development via GitHub Spec Kit)
+     -> Rules: communication, code-style, testing, git (~/.claude/rules/)
+     -> Skills: frontend, python, csharp (~/.claude/skills/)
+     -> Optional: MemPalace (persistent memory palace plugin)
+     -> Optional: Caveman (terse output, ~75% token savings)
 ```
 
 Why this order matters:
@@ -141,6 +145,57 @@ Why this order matters:
 - do not run both Claude auto-memory and a separate knowledge graph on day one
 - pick one primary system; the MCP memory server is recommended for project-specific facts
 
+## Modular Rules and Skills
+
+The global install now includes modular configuration files:
+
+### Rules (`~/.claude/rules/`)
+
+Rules are referenced from `CLAUDE.md` via `@rules/filename.md` and provide behavioral guardrails:
+
+- **communication.md** — brevity, no filler, direct answers
+- **code-style.md** — smallest patch, no premature abstractions, read before configuring
+- **testing.md** — verify your own work, run actual commands, never skip testing
+- **git.md** — conventional commits, no amend unless asked, testing before committing
+
+### Skills (`~/.claude/skills/`)
+
+Skills are language-specific conventions activated by the `/skill` command:
+
+- **frontend** — React, TypeScript, modern CSS patterns
+- **python** — Poetry, ruff, pytest, async patterns
+- **csharp** — .NET, xUnit, DI patterns, Testcontainers
+
+## Optional Plugins
+
+### MemPalace
+
+A persistent memory palace plugin that stores verbatim content (not summaries) using ChromaDB. Organizes memory into wings, rooms, and drawers using the method of loci.
+
+Install with the `--with-mempalace` flag or manually:
+
+```bash
+claude plugin marketplace add MemPalace/mempalace
+claude plugin install mempalace@mempalace
+pip3 install mempalace
+mempalace init ~/projects/myapp
+```
+
+Use in session: `/mempalace:search "why did we switch to X"`
+
+### Caveman
+
+A plugin that makes Claude communicate in ultra-terse style, reducing output tokens by ~75% while maintaining technical accuracy.
+
+Install with the `--with-caveman` flag or manually:
+
+```bash
+claude plugin marketplace add JuliusBrussee/caveman
+claude plugin install caveman@caveman
+```
+
+Use in session: `/caveman` to activate terse mode. Sub-skills include `caveman-commit`, `caveman-review`, and `caveman-compress`.
+
 ## Claude Extras To Lean On
 
 Claude Code already has several built-in features worth using before adding more tooling:
@@ -194,6 +249,8 @@ What it does:
 - installs MCP servers to `~/.claude.json` (Claude Code user scope — available in all projects)
 - merges MCP servers into VS Code user-level `settings.json`
 - installs global Claude rules to `~/.claude/CLAUDE.md`
+- installs modular rules to `~/.claude/rules/` (communication, code-style, testing, git)
+- installs skills to `~/.claude/skills/` (frontend, python, csharp)
 - installs the `specify` CLI (GitHub Spec Kit) via `uv`
 - prompts for a GitHub PAT if not already configured (persists to `~/.zprofile`)
 
@@ -222,6 +279,17 @@ What it does:
 
 # Skip Playwright MCP
 ./claude/scripts/install-claude-mcp-setup.sh --global --skip-playwright
+
+# Skip rules or skills
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-rules
+./claude/scripts/install-claude-mcp-setup.sh --global --skip-skills
+
+# Install optional plugins
+./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace
+./claude/scripts/install-claude-mcp-setup.sh --global --with-caveman
+
+# Kitchen sink
+./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman
 
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/project-name"
@@ -369,3 +437,5 @@ If memory feels noisy:
 - MCP memory server: https://www.npmjs.com/package/@modelcontextprotocol/server-memory
 - MCP sequential thinking: https://www.npmjs.com/package/@modelcontextprotocol/server-sequential-thinking
 - Context7: https://github.com/upstash/context7
+- MemPalace: https://github.com/MemPalace/mempalace
+- Caveman: https://github.com/JuliusBrussee/caveman

@@ -28,11 +28,26 @@
 - project-only writes to `.mcp.json` and `.vscode/mcp.json` in the repo
 - global CLAUDE.md template lives at `claude/templates/global-CLAUDE.md` in this repo
 
+### Modular Rules and Skills
+
+- global CLAUDE.md now uses `@rules/` references instead of inline content
+- rules are split into focused files: communication, code-style, testing, git
+- skills are language-specific convention files: frontend, python, csharp
+- installer copies both rules and skills during `--global` install
+- `--skip-rules` and `--skip-skills` flags available for users who want their own
+
+### Optional Plugins
+
+- optional plugins are opt-in via `--with-*` flags, not installed by default
+- MemPalace (`--with-mempalace`): persistent memory palace using ChromaDB, stores verbatim content
+- Caveman (`--with-caveman`): terse output mode, ~75% token savings
+- both are Claude Code plugins installed via the plugin marketplace
+
 ### Memory Strategy
 
 - keep the official MCP memory server as the primary structured memory backend
 - use file-based memory for human-readable repo state and decision logging
-- do not add a second heavy memory system yet
+- MemPalace is available as an optional upgrade for users who want richer memory
 
 ### File-Based Memory
 

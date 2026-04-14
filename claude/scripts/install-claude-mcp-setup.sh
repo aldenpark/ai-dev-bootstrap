@@ -9,6 +9,10 @@ github_pat=""
 skip_github=0
 skip_playwright=0
 install_global=0
+skip_rules=0
+skip_skills=0
+with_mempalace=0
+with_caveman=0
 
 usage() {
   cat <<'EOF'
@@ -20,6 +24,10 @@ Options:
   --github-pat TOKEN              GitHub Personal Access Token for GitHub MCP server.
   --skip-github                  Skip GitHub MCP configuration.
   --skip-playwright              Skip Playwright MCP configuration.
+  --skip-rules                   Skip installing global rules (~/.claude/rules/).
+  --skip-skills                  Skip installing skills (~/.claude/skills/).
+  --with-mempalace               Install MemPalace plugin (memory palace for Claude).
+  --with-caveman                 Install Caveman plugin (terse output, ~75% token savings).
   -h, --help                     Show this help message.
 EOF
 }
@@ -291,6 +299,22 @@ while (($#)); do
       skip_playwright=1
       shift
       ;;
+    --skip-rules)
+      skip_rules=1
+      shift
+      ;;
+    --skip-skills)
+      skip_skills=1
+      shift
+      ;;
+    --with-mempalace)
+      with_mempalace=1
+      shift
+      ;;
+    --with-caveman)
+      with_caveman=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -400,6 +424,73 @@ if [ "$install_global" -eq 1 ]; then
     printf 'WARNING: Template not found at %s — skipping global CLAUDE.md\n' "$template_claude_md" >&2
   fi
 
+  # Install modular rules
+  if [ "$skip_rules" -eq 0 ]; then
+    template_rules_dir="$script_dir/../templates/rules"
+    target_rules_dir="$HOME/.claude/rules"
+    if [ -d "$template_rules_dir" ]; then
+      mkdir -p "$target_rules_dir"
+      for rule_file in "$template_rules_dir"/*.md; do
+        [ -f "$rule_file" ] || continue
+        cp "$rule_file" "$target_rules_dir/$(basename "$rule_file")"
+      done
+      printf 'Installed rules to: %s\n' "$target_rules_dir"
+    else
+      printf 'WARNING: Rules templates not found at %s — skipping\n' "$template_rules_dir" >&2
+    fi
+  fi
+
+  # Install skills
+  if [ "$skip_skills" -eq 0 ]; then
+    template_skills_dir="$script_dir/../templates/skills"
+    target_skills_dir="$HOME/.claude/skills"
+    if [ -d "$template_skills_dir" ]; then
+      mkdir -p "$target_skills_dir"
+      for skill_dir in "$template_skills_dir"/*/; do
+        [ -d "$skill_dir" ] || continue
+        skill_name="$(basename "$skill_dir")"
+        mkdir -p "$target_skills_dir/$skill_name"
+        cp "$skill_dir"SKILL.md "$target_skills_dir/$skill_name/SKILL.md" 2>/dev/null || true
+      done
+      printf 'Installed skills to: %s\n' "$target_skills_dir"
+    else
+      printf 'WARNING: Skills templates not found at %s — skipping\n' "$template_skills_dir" >&2
+    fi
+  fi
+
+  # Optional: Install MemPalace plugin
+  if [ "$with_mempalace" -eq 1 ]; then
+    printf '\nInstalling MemPalace plugin...\n'
+    if command -v claude >/dev/null 2>&1; then
+      claude plugin marketplace add MemPalace/mempalace 2>/dev/null || true
+      claude plugin install mempalace@mempalace 2>&1 || {
+        printf 'WARNING: MemPalace plugin install failed. Install manually:\n' >&2
+        printf '  claude plugin marketplace add MemPalace/mempalace\n' >&2
+        printf '  claude plugin install mempalace@mempalace\n' >&2
+      }
+    fi
+    if command -v pip3 >/dev/null 2>&1; then
+      pip3 install --user mempalace 2>&1 || {
+        printf 'WARNING: MemPalace pip install failed. Install manually: pip3 install mempalace\n' >&2
+      }
+    fi
+    printf 'MemPalace install attempted. Run "mempalace init" in your project to set up.\n'
+  fi
+
+  # Optional: Install Caveman plugin
+  if [ "$with_caveman" -eq 1 ]; then
+    printf '\nInstalling Caveman plugin...\n'
+    if command -v claude >/dev/null 2>&1; then
+      claude plugin marketplace add JuliusBrussee/caveman 2>/dev/null || true
+      claude plugin install caveman@caveman 2>&1 || {
+        printf 'WARNING: Caveman plugin install failed. Install manually:\n' >&2
+        printf '  claude plugin marketplace add JuliusBrussee/caveman\n' >&2
+        printf '  claude plugin install caveman@caveman\n' >&2
+      }
+    fi
+    printf 'Caveman install attempted. Use "/caveman" in a session to activate terse mode.\n'
+  fi
+
   printf '\nGlobal setup complete.\n\n'
   printf 'Memory file: %s\n' "$memory_file"
   printf 'Claude config: %s\n' "$HOME/.claude.json"
@@ -410,8 +501,24 @@ if [ "$install_global" -eq 1 ]; then
     Linux) printf 'VS Code settings: %s\n' "$HOME/.config/Code/User/settings.json" ;;
   esac
 
+  if [ "$skip_rules" -eq 0 ]; then
+    printf 'Rules: %s\n' "$HOME/.claude/rules/"
+  fi
+
+  if [ "$skip_skills" -eq 0 ]; then
+    printf 'Skills: %s\n' "$HOME/.claude/skills/"
+  fi
+
   if [ "$skip_github" -eq 0 ]; then
     printf 'GitHub MCP: configured with PAT\n'
+  fi
+
+  if [ "$with_mempalace" -eq 1 ]; then
+    printf 'MemPalace: installed\n'
+  fi
+
+  if [ "$with_caveman" -eq 1 ]; then
+    printf 'Caveman: installed\n'
   fi
 
   cat <<'EOF'
