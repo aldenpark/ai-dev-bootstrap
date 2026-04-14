@@ -162,11 +162,19 @@ Rules are referenced from `CLAUDE.md` via `@rules/filename.md` and provide behav
 
 ### Skills (`~/.claude/skills/`)
 
-Skills are language-specific conventions activated by the `/skill` command:
+Skills are activated by the `/skill` command and provide domain-specific conventions:
 
 - **frontend** — React, TypeScript, modern CSS patterns
 - **python** — Poetry, ruff, pytest, async patterns
 - **csharp** — .NET, xUnit, DI patterns, Testcontainers
+- **review** — multi-agent code review that spawns specialized sub-agents in parallel based on what changed (10 reviewer prompts covering .NET, Python, React, config safety, test coverage, resilience, observability, agent interfaces, cross-service, and past learnings)
+- **mine-learnings** — extracts actionable learnings from past Claude Code sessions and stores them in `~/.claude/learnings/` as JSONL; includes a Python script to extract unprocessed session transcripts and parallel agents to analyze them
+
+### Custom Agents (`~/.claude/agents/`)
+
+Custom agents are specialized sub-agents with constrained tool access and dedicated system prompts. They run on cheaper/faster models to keep the main conversation context clean.
+
+- **ado-manager** — manages Azure DevOps work items (create stories, update state, link parents, assign points). Runs on Sonnet with only ADO MCP tools. Returns concise summaries instead of raw API responses.
 
 ## Optional Plugins
 
@@ -290,7 +298,8 @@ What it does:
 - merges MCP servers into VS Code user-level `settings.json`
 - installs global Claude rules to `~/.claude/CLAUDE.md`
 - installs modular rules to `~/.claude/rules/` (communication, code-style, testing, git)
-- installs skills to `~/.claude/skills/` (frontend, python, csharp)
+- installs skills to `~/.claude/skills/` (frontend, python, csharp, review, mine-learnings)
+- installs custom agents to `~/.claude/agents/` (ado-manager)
 - installs the `specify` CLI (GitHub Spec Kit) via `uv`
 - prompts for a GitHub PAT if not already configured (persists to `~/.zprofile`)
 

@@ -17,7 +17,8 @@ This repo is building a repeatable AI coding environment for:
 - GitHub Spec Kit (`specify` CLI) installed globally via `uv` for spec-driven development
 - Modular global CLAUDE.md template using `@rules/` references instead of inline content
 - Modular rules templates: communication, code-style, testing, git (`claude/templates/rules/`)
-- Language-specific skills: frontend, python, csharp (`claude/templates/skills/`)
+- Skills: frontend, python, csharp, review, mine-learnings (`claude/templates/skills/`)
+- Custom agents: ado-manager (`claude/templates/agents/`)
 - Installer copies rules to `~/.claude/rules/` and skills to `~/.claude/skills/` on `--global` install
 - Optional plugin support: `--with-mempalace`, `--with-caveman` installer flags
 - Optional MCP server support: `--with-atlassian` (OAuth), `--with-ado` (PAT-based) installer flags

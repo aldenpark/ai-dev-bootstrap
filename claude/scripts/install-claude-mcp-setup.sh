@@ -471,13 +471,24 @@ if [ "$install_global" -eq 1 ]; then
       for skill_dir in "$template_skills_dir"/*/; do
         [ -d "$skill_dir" ] || continue
         skill_name="$(basename "$skill_dir")"
-        mkdir -p "$target_skills_dir/$skill_name"
-        cp "$skill_dir"SKILL.md "$target_skills_dir/$skill_name/SKILL.md" 2>/dev/null || true
+        cp -r "$skill_dir" "$target_skills_dir/$skill_name"
       done
       printf 'Installed skills to: %s\n' "$target_skills_dir"
     else
       printf 'WARNING: Skills templates not found at %s — skipping\n' "$template_skills_dir" >&2
     fi
+  fi
+
+  # Install custom agents
+  template_agents_dir="$script_dir/../templates/agents"
+  target_agents_dir="$HOME/.claude/agents"
+  if [ -d "$template_agents_dir" ]; then
+    mkdir -p "$target_agents_dir"
+    for agent_file in "$template_agents_dir"/*.md; do
+      [ -f "$agent_file" ] || continue
+      cp "$agent_file" "$target_agents_dir/$(basename "$agent_file")"
+    done
+    printf 'Installed agents to: %s\n' "$target_agents_dir"
   fi
 
   # Optional: Install MemPalace plugin
@@ -578,6 +589,10 @@ if [ "$install_global" -eq 1 ]; then
 
   if [ "$skip_skills" -eq 0 ]; then
     printf 'Skills: %s\n' "$HOME/.claude/skills/"
+  fi
+
+  if [ -d "$target_agents_dir" ] && [ "$(ls -A "$target_agents_dir" 2>/dev/null)" ]; then
+    printf 'Agents: %s\n' "$HOME/.claude/agents/"
   fi
 
   if [ "$skip_github" -eq 0 ]; then
