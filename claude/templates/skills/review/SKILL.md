@@ -44,6 +44,15 @@ Tools/, Filters/, *Mcp*, *mcp* → agent-interface
 *Polly*, *HttpClient*, *cache*, *retry*, *resilience*, *Circuit* → resilience
 *metric*, *counter*, *histogram*, *Instrumentation*, *otel*, *telemetry*, *span* → observability
 *auth*, *dlp*, *token*, *prompt*, *cabinet*, *membership* → cross-service
+*asyncio*, *subprocess*, *ThreadPool*, *Semaphore*, *sleep*, *queue*, *visibility* → python-concurrency
+*batch*, *parallel*, *concurrent*, *throughput*, *ratelimit*, *embedding_texts*, *max_workers* → performance
+terraform/iam.tf, terraform/policy.tf, *Permission*, *iam* → aws-permissions
+Dockerfile*, docker-compose*, *.dockerfile → docker-compose
+*CloudEvent*, *cloud_event*, *specversion*, *PascalCase*, events/ → cloud-events
+*sqs*, *queue*, *fifo*, *visibility*, *redrive*, *dlq* → sqs-configuration
+requirements.txt, pyproject.toml, setup.py, *__version__*, Dockerfile.scout → dependency-versions
+*error*, *exception*, *retry*, *dlq*, *backoff*, *circuit* → error-handling
+*logger*, *logging*, *log_level*, *LOG_LEVEL*, *metric*, *doc:* → logging-standards
 (always)                → learnings-check
 ```
 
@@ -147,4 +156,13 @@ Each reviewer's prompt is stored in `reviewers/{name}.md`:
 | resilience | `reviewers/resilience.md` | *Polly*, *HttpClient*, *cache*, *retry* |
 | observability | `reviewers/observability.md` | *metric*, *Instrumentation*, *otel* |
 | cross-service | `reviewers/cross-service.md` | *auth*, *dlp*, *token*, *cabinet* |
+| python-concurrency | `reviewers/python-concurrency.md` | *asyncio*, *subprocess*, *ThreadPool*, *sleep*, *queue* |
+| performance | `reviewers/performance.md` | *batch*, *parallel*, *concurrent*, *ratelimit*, *embedding_texts* |
+| aws-permissions | `reviewers/aws-permissions.md` | terraform/iam.tf, terraform/policy.tf |
+| docker-compose | `reviewers/docker-compose.md` | Dockerfile*, docker-compose* |
+| cloud-events | `reviewers/cloud-events.md` | *CloudEvent*, *specversion*, events/ |
+| sqs-configuration | `reviewers/sqs-configuration.md` | *sqs*, *queue*, *fifo*, *visibility*, *dlq* |
+| dependency-versions | `reviewers/dependency-versions.md` | requirements.txt, pyproject.toml, setup.py, Dockerfile.scout |
+| error-handling | `reviewers/error-handling.md` | *error*, *exception*, *retry*, *dlq*, *backoff* |
+| logging-standards | `reviewers/logging-standards.md` | *logger*, *logging*, *log_level*, *metric* |
 | learnings-check | `reviewers/learnings-check.md` | always |

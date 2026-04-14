@@ -167,14 +167,20 @@ Skills are activated by the `/skill` command and provide domain-specific convent
 - **frontend** — React, TypeScript, modern CSS patterns
 - **python** — Poetry, ruff, pytest, async patterns
 - **csharp** — .NET, xUnit, DI patterns, Testcontainers
-- **review** — multi-agent code review that spawns specialized sub-agents in parallel based on what changed (10 reviewer prompts covering .NET, Python, React, config safety, test coverage, resilience, observability, agent interfaces, cross-service, and past learnings)
+- **review** — multi-agent code review that spawns specialized sub-agents in parallel based on what changed (19 reviewers: dotnet, python, react, config-safety, test-coverage, agent-interface, resilience, observability, cross-service, python-concurrency, performance, aws-permissions, docker-compose, cloud-events, sqs-configuration, dependency-versions, error-handling, logging-standards, learnings-check)
 - **mine-learnings** — extracts actionable learnings from past Claude Code sessions and stores them in `~/.claude/learnings/` as JSONL; includes a Python script to extract unprocessed session transcripts and parallel agents to analyze them
+- **pr-creator** — runs `/review` (P1 gate) → lint → tests → creates branch `ai/ap/{ID}-{slug}` → commit → push → PR. Blocks on P1 findings. No reviewer assignment.
+- **post-deploy-verify** — before/after CloudWatch log comparison, ECS health check. Run after deploying to QA or dev.
+- **terraform-diff** — side-by-side tfvars diff across all environments for a service. Flags missing overrides and inconsistencies.
+- **session-handoff** — reads plans, memory, git state, docker/infra health, and generates a briefing for a new session to pick up where the last left off.
 
 ### Custom Agents (`~/.claude/agents/`)
 
 Custom agents are specialized sub-agents with constrained tool access and dedicated system prompts. They run on cheaper/faster models to keep the main conversation context clean.
 
-- **ado-manager** — manages Azure DevOps work items (create stories, update state, link parents, assign points). Runs on Sonnet with only ADO MCP tools. Returns concise summaries instead of raw API responses.
+- **ado-manager** — manages Azure DevOps work items (create stories, update state, link parents, assign points). Runs on Sonnet with only ADO MCP tools.
+- **deploy-watcher** — checks ECS health + CloudWatch logs after a deploy. Categorizes errors and reports a verdict. Runs on Sonnet.
+- **sagemaker-runner** — syncs scripts/repos to S3, provides SageMaker commands, pulls Optuna results. Runs on Sonnet.
 
 ## Optional Plugins
 
@@ -298,8 +304,8 @@ What it does:
 - merges MCP servers into VS Code user-level `settings.json`
 - installs global Claude rules to `~/.claude/CLAUDE.md`
 - installs modular rules to `~/.claude/rules/` (communication, code-style, testing, git)
-- installs skills to `~/.claude/skills/` (frontend, python, csharp, review, mine-learnings)
-- installs custom agents to `~/.claude/agents/` (ado-manager)
+- installs skills to `~/.claude/skills/` (frontend, python, csharp, review, mine-learnings, pr-creator, post-deploy-verify, terraform-diff, session-handoff)
+- installs custom agents to `~/.claude/agents/` (ado-manager, deploy-watcher, sagemaker-runner)
 - installs the `specify` CLI (GitHub Spec Kit) via `uv`
 - prompts for a GitHub PAT if not already configured (persists to `~/.zprofile`)
 
