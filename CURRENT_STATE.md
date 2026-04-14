@@ -19,7 +19,8 @@ This repo is building a repeatable AI coding environment for:
 - Modular rules templates: communication, code-style, testing, git (`claude/templates/rules/`)
 - Language-specific skills: frontend, python, csharp (`claude/templates/skills/`)
 - Installer copies rules to `~/.claude/rules/` and skills to `~/.claude/skills/` on `--global` install
-- Optional plugin support: `--with-mempalace` and `--with-caveman` installer flags
+- Optional plugin support: `--with-mempalace`, `--with-caveman` installer flags
+- Optional MCP server support: `--with-atlassian` (OAuth), `--with-ado` (PAT-based) installer flags
 - GitHub PAT auto-detection (env var > existing config > interactive prompt > skip)
 - synced top-level setup guide in `Local AI Coding Environment Setup.md`
 - Context7 added to the Codex and Claude installer/config path

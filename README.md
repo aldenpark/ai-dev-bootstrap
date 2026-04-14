@@ -56,6 +56,7 @@ Recommended split:
 - Modular rules: communication, code-style, testing, git (`~/.claude/rules/`)
 - Skills: frontend, python, csharp (`~/.claude/skills/`)
 - Optional plugins: MemPalace (persistent memory palace), Caveman (terse output)
+- Optional MCP servers: Atlassian (Jira/Confluence), Azure DevOps (work items/PRs)
 - planning layer: `spec-kit` (GitHub Spec Kit `specify` CLI)
 
 ### Shared MCP servers
@@ -128,8 +129,10 @@ Claude installer options:
 ./claude/scripts/install-claude-mcp-setup.sh --global --skip-rules
 ./claude/scripts/install-claude-mcp-setup.sh --global --skip-skills
 
-# Install optional plugins
+# Install optional plugins and MCP servers
 ./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman
+./claude/scripts/install-claude-mcp-setup.sh --global --with-atlassian
+./claude/scripts/install-claude-mcp-setup.sh --global --with-ado --ado-org myorg
 
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/my-project"

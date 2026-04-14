@@ -41,7 +41,9 @@
 - optional plugins are opt-in via `--with-*` flags, not installed by default
 - MemPalace (`--with-mempalace`): persistent memory palace using ChromaDB, stores verbatim content
 - Caveman (`--with-caveman`): terse output mode, ~75% token savings
-- both are Claude Code plugins installed via the plugin marketplace
+- Atlassian (`--with-atlassian`): Jira, Confluence, Compass via OAuth 2.1 — auth handled on first use via `/mcp`
+- Azure DevOps (`--with-ado`): work items, repos, PRs via `@azure-devops/mcp` — requires org name
+- plugins are installed via the Claude Code plugin marketplace; MCP servers via `claude mcp add`
 
 ### Memory Strategy
 

@@ -61,6 +61,8 @@ You
      -> Skills: frontend, python, csharp (~/.claude/skills/)
      -> Optional: MemPalace (persistent memory palace plugin)
      -> Optional: Caveman (terse output, ~75% token savings)
+     -> Optional: Atlassian MCP (Jira, Confluence, Compass via OAuth)
+     -> Optional: Azure DevOps MCP (work items, repos, PRs via PAT)
 ```
 
 Why this order matters:
@@ -196,6 +198,44 @@ claude plugin install caveman@caveman
 
 Use in session: `/caveman` to activate terse mode. Sub-skills include `caveman-commit`, `caveman-review`, and `caveman-compress`.
 
+## Optional MCP Servers
+
+### Atlassian (Jira, Confluence, Compass)
+
+Adds tools for Jira issues, Confluence pages, and Compass components via OAuth 2.1.
+
+Install with the `--with-atlassian` flag or manually:
+
+```bash
+claude mcp add --transport http --scope user atlassian https://mcp.atlassian.com/v1/mcp
+```
+
+After adding:
+
+1. Restart Claude Code (or start a new session)
+2. Run `/mcp` — you'll see atlassian listed, likely needing auth
+3. `/mcp` walks you through the OAuth 2.1 flow (opens browser to your Atlassian Cloud site)
+
+Once authenticated, you get tools for Jira, Confluence, and Compass depending on what your Atlassian site has.
+
+### Azure DevOps (Work Items, Repos, PRs)
+
+Adds tools for ADO work items, repositories, pull requests, and pipelines via `@azure-devops/mcp`.
+
+Install with the `--with-ado` flag or manually:
+
+```bash
+claude mcp add --scope user azure-devops -- npx -y @azure-devops/mcp YOUR_ORG
+```
+
+Replace `YOUR_ORG` with your Azure DevOps organization name (e.g. `netdocuments`).
+
+The installer prompts for the org name interactively, or you can pass it directly:
+
+```bash
+./claude/scripts/install-claude-mcp-setup.sh --global --with-ado --ado-org netdocuments
+```
+
 ## Claude Extras To Lean On
 
 Claude Code already has several built-in features worth using before adding more tooling:
@@ -288,8 +328,12 @@ What it does:
 ./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace
 ./claude/scripts/install-claude-mcp-setup.sh --global --with-caveman
 
+# Install optional MCP servers
+./claude/scripts/install-claude-mcp-setup.sh --global --with-atlassian
+./claude/scripts/install-claude-mcp-setup.sh --global --with-ado --ado-org myorg
+
 # Kitchen sink
-./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman
+./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman --with-atlassian
 
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/project-name"
@@ -439,3 +483,5 @@ If memory feels noisy:
 - Context7: https://github.com/upstash/context7
 - MemPalace: https://github.com/MemPalace/mempalace
 - Caveman: https://github.com/JuliusBrussee/caveman
+- Atlassian MCP: https://mcp.atlassian.com
+- Azure DevOps MCP: https://www.npmjs.com/package/@azure-devops/mcp

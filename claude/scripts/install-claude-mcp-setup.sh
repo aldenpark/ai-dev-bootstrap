@@ -13,6 +13,9 @@ skip_rules=0
 skip_skills=0
 with_mempalace=0
 with_caveman=0
+with_atlassian=0
+with_ado=0
+ado_org=""
 
 usage() {
   cat <<'EOF'
@@ -28,6 +31,9 @@ Options:
   --skip-skills                  Skip installing skills (~/.claude/skills/).
   --with-mempalace               Install MemPalace plugin (memory palace for Claude).
   --with-caveman                 Install Caveman plugin (terse output, ~75% token savings).
+  --with-atlassian               Add Atlassian MCP (Jira, Confluence, Compass via OAuth).
+  --with-ado                     Add Azure DevOps MCP (work items, repos, PRs).
+  --ado-org NAME                 Azure DevOps org name (e.g. netdocuments).
   -h, --help                     Show this help message.
 EOF
 }
@@ -315,6 +321,22 @@ while (($#)); do
       with_caveman=1
       shift
       ;;
+    --with-atlassian)
+      with_atlassian=1
+      shift
+      ;;
+    --with-ado)
+      with_ado=1
+      shift
+      ;;
+    --ado-org)
+      if [ "$#" -lt 2 ]; then
+        printf '%s\n' '--ado-org requires an org name' >&2
+        exit 1
+      fi
+      ado_org="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -491,6 +513,55 @@ if [ "$install_global" -eq 1 ]; then
     printf 'Caveman install attempted. Use "/caveman" in a session to activate terse mode.\n'
   fi
 
+  # Optional: Add Atlassian MCP (Jira, Confluence, Compass)
+  if [ "$with_atlassian" -eq 1 ]; then
+    printf '\nAdding Atlassian MCP server...\n'
+    if command -v claude >/dev/null 2>&1; then
+      claude mcp remove -s user atlassian 2>/dev/null || true
+      claude mcp add --transport http -s user atlassian https://mcp.atlassian.com/v1/mcp 2>&1 || {
+        printf 'WARNING: Atlassian MCP add failed. Add manually:\n' >&2
+        printf '  claude mcp add --transport http --scope user atlassian https://mcp.atlassian.com/v1/mcp\n' >&2
+      }
+      printf 'Atlassian MCP added. Auth is required on first use:\n'
+      printf '  1. Restart Claude Code (or start a new session)\n'
+      printf '  2. Run /mcp — you will see atlassian listed as needing auth\n'
+      printf '  3. /mcp will walk you through the OAuth 2.1 flow (opens browser)\n'
+      printf '  Once authenticated, you get tools for Jira, Confluence, and Compass.\n'
+    else
+      printf 'WARNING: claude CLI not found — cannot add Atlassian MCP.\n' >&2
+      printf 'Add manually: claude mcp add --transport http --scope user atlassian https://mcp.atlassian.com/v1/mcp\n' >&2
+    fi
+  fi
+
+  # Optional: Add Azure DevOps MCP (work items, repos, PRs)
+  if [ "$with_ado" -eq 1 ]; then
+    printf '\nAdding Azure DevOps MCP server...\n'
+
+    # Resolve ADO org name: flag > prompt
+    if [ -z "$ado_org" ]; then
+      printf 'Enter Azure DevOps org name (e.g. netdocuments): '
+      read -r ado_org
+      if [ -z "$ado_org" ]; then
+        printf 'Skipping Azure DevOps MCP — no org name provided.\n'
+        with_ado=0
+      fi
+    fi
+
+    if [ "$with_ado" -eq 1 ]; then
+      if command -v claude >/dev/null 2>&1; then
+        claude mcp remove -s user azure-devops 2>/dev/null || true
+        claude mcp add -s user azure-devops -- npx -y @azure-devops/mcp "$ado_org" 2>&1 || {
+          printf 'WARNING: Azure DevOps MCP add failed. Add manually:\n' >&2
+          printf '  claude mcp add --scope user azure-devops -- npx -y @azure-devops/mcp %s\n' "$ado_org" >&2
+        }
+        printf 'Azure DevOps MCP added for org: %s\n' "$ado_org"
+      else
+        printf 'WARNING: claude CLI not found — cannot add Azure DevOps MCP.\n' >&2
+        printf 'Add manually: claude mcp add --scope user azure-devops -- npx -y @azure-devops/mcp %s\n' "$ado_org" >&2
+      fi
+    fi
+  fi
+
   printf '\nGlobal setup complete.\n\n'
   printf 'Memory file: %s\n' "$memory_file"
   printf 'Claude config: %s\n' "$HOME/.claude.json"
@@ -519,6 +590,14 @@ if [ "$install_global" -eq 1 ]; then
 
   if [ "$with_caveman" -eq 1 ]; then
     printf 'Caveman: installed\n'
+  fi
+
+  if [ "$with_atlassian" -eq 1 ]; then
+    printf 'Atlassian MCP: added (auth required on first use via /mcp)\n'
+  fi
+
+  if [ "$with_ado" -eq 1 ]; then
+    printf 'Azure DevOps MCP: configured\n'
   fi
 
   cat <<'EOF'
