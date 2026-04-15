@@ -159,6 +159,7 @@ Rules are referenced from `CLAUDE.md` via `@rules/filename.md` and provide behav
 - **code-style.md** — smallest patch, no premature abstractions, read before configuring
 - **testing.md** — verify your own work, run actual commands, never skip testing
 - **git.md** — conventional commits, no amend unless asked, testing before committing
+- **diagrams.md** — include Mermaid diagrams for architecture, flow, and design explanations
 
 ### Skills (`~/.claude/skills/`)
 
@@ -167,12 +168,14 @@ Skills are activated by the `/skill` command and provide domain-specific convent
 - **frontend** — React, TypeScript, modern CSS patterns
 - **python** — Poetry, ruff, pytest, async patterns
 - **csharp** — .NET, xUnit, DI patterns, Testcontainers
-- **review** — multi-agent code review that spawns specialized sub-agents in parallel based on what changed (19 reviewers: dotnet, python, react, config-safety, test-coverage, agent-interface, resilience, observability, cross-service, python-concurrency, performance, aws-permissions, docker-compose, cloud-events, sqs-configuration, dependency-versions, error-handling, logging-standards, learnings-check)
+- **review** — multi-agent code review with adversarial dual-pass by default (19 reviewers). Two independent passes run in parallel, then a reconciler compares findings, resolves contradictions, and scores confidence. Use `--quick` for single-pass.
 - **mine-learnings** — extracts actionable learnings from past Claude Code sessions and stores them in `~/.claude/learnings/` as JSONL; includes a Python script to extract unprocessed session transcripts and parallel agents to analyze them
 - **pr-creator** — runs `/review` (P1 gate) → lint → tests → creates branch `ai/ap/{ID}-{slug}` → commit → push → PR. Blocks on P1 findings. No reviewer assignment.
 - **post-deploy-verify** — before/after CloudWatch log comparison, ECS health check. Run after deploying to QA or dev.
 - **terraform-diff** — side-by-side tfvars diff across all environments for a service. Flags missing overrides and inconsistencies.
 - **session-handoff** — reads plans, memory, git state, docker/infra health, and generates a briefing for a new session to pick up where the last left off.
+- **learn-eval** — replays merged PRs through the reviewer system, scores how well reviewers would have caught real bugs, outputs a scorecard per reviewer with prompt tuning suggestions.
+- **quality-gate** — configurable pass/fail gate for code reviews. Evaluates `/review` output against thresholds (default/strict/lenient) and returns a binary verdict. Composable with `/pr-creator`.
 
 ### Custom Agents (`~/.claude/agents/`)
 
@@ -198,6 +201,8 @@ mempalace init ~/projects/myapp
 ```
 
 Use in session: `/mempalace:search "why did we switch to X"`
+
+For large palaces (>30k drawers), see [mempalace-large-palace-fixes.md](templates/mempalace-large-palace-fixes.md) — patches for SQLite variable limits, MCP connection timeouts, and venv Python path issues.
 
 ### Caveman
 

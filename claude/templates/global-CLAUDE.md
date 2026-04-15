@@ -6,6 +6,7 @@ MCP servers are helpers, not decision-makers.
 @rules/code-style.md
 @rules/testing.md
 @rules/git.md
+@rules/diagrams.md
 
 ## Core Policy
 

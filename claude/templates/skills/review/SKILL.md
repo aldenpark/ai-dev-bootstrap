@@ -11,10 +11,11 @@ Multi-agent code review tailored to the NetDocuments AI platform. Analyzes the d
 ## Usage
 
 ```
-/review              # Review uncommitted changes
-/review PR_URL       # Review a GitHub PR
-/review PR_NUMBER    # Review a PR by number (infers repo from cwd)
-/review --files      # Review only staged files
+/review              # Adversarial dual-pass review of uncommitted changes (default)
+/review PR_URL       # Adversarial dual-pass review of a GitHub PR
+/review PR_NUMBER    # Adversarial dual-pass review of a PR by number
+/review --files      # Adversarial dual-pass review of staged files only
+/review --quick      # Single-pass review (faster, less thorough)
 ```
 
 ## Process
@@ -58,7 +59,13 @@ requirements.txt, pyproject.toml, setup.py, *__version__*, Dockerfile.scout → 
 
 A file can trigger multiple reviewers. Log which reviewers are being launched and why.
 
-### Step 3: Launch reviewers in parallel
+### Step 3: Launch reviewers
+
+**Default (adversarial dual-pass):** Skip to **Step 3A: Adversarial Dual-Pass**.
+
+**If `--quick` is set:** Use single-pass mode below instead.
+
+#### Single-pass mode (`--quick`)
 
 For each selected reviewer, read its prompt from `reviewers/{name}.md` (relative to this skill's directory). Launch an Agent (subagent_type: "general-purpose") with the prompt contents. Run all agents in parallel using `run_in_background: true`.
 
@@ -140,6 +147,81 @@ Problem description.
 **Skip this step for:**
 - Non-PR reviews (uncommitted changes, staged files)
 - ADO-hosted repos (ADO does not support draft/pending reviews — comments are immediately visible)
+
+---
+
+## Adversarial Dual-Pass (default mode)
+
+The default review mode. Runs two independent review passes and reconciles findings. Use `--quick` to skip this and run a single pass instead.
+
+### Step 3A: Launch two independent review passes
+
+Launch **Pass A** and **Pass B** as completely independent background agents. Each pass runs the full reviewer dispatch (Step 2's file classification → select reviewers → launch reviewer sub-agents → collect findings).
+
+**Isolation rules:**
+- Pass A and Pass B MUST NOT share context, findings, or intermediate results
+- Launch both using `run_in_background: true` so they run in parallel
+- Each pass gets the same diff, repo path, and reviewer selection — nothing else
+
+Each pass agent prompt:
+```
+You are Review Pass {A|B} in an adversarial dual-review. Run a full code review of the provided diff.
+
+1. Read the diff and classify changed files using the reviewer selection rules
+2. For each triggered reviewer, read its prompt from ~/.claude/skills/review/reviewers/{name}.md
+3. Execute each reviewer's analysis against the diff and source files
+4. Collect all findings as JSON: [{severity, title, file, line, problem, suggestion, proof}]
+5. Return the complete findings list
+
+Line numbers must be source-file line numbers, not diff offsets.
+Be thorough — your findings will be compared against an independent pass.
+```
+
+### Step 4A: Reconcile findings
+
+Once both passes complete, act as the **Reconciler**. Compare findings:
+
+| Category | Meaning | Action |
+|----------|---------|--------|
+| **Agreed** | Both passes flagged same issue (same file, same/adjacent lines, same category) | Keep — high confidence |
+| **Unique-A** | Only Pass A found it | Verify — read source, confirm valid or drop as false positive |
+| **Unique-B** | Only Pass B found it | Verify — read source, confirm valid or drop as false positive |
+| **Contradicted** | Passes disagree on same code | Read source, check against reviewer rules, make a ruling |
+
+For each unique or contradicted finding, read the actual source file and make a ruling.
+
+### Step 5A: Generate adversarial report
+
+Use the same P1/P2/P3 report format as standard mode, but add these sections:
+
+```markdown
+## Code Review Results (Adversarial)
+
+### Convergence Summary
+- Pass A: {N} findings | Pass B: {M} findings
+- Agreed: {X} | Unique-A: {Y} (kept/dropped) | Unique-B: {Z} (kept/dropped) | Contradictions: {W}
+- **Confidence: {High|Medium|Low}**
+
+### P1 — Must Fix ...
+{same format as standard, each finding tagged [agreed|verified-A|verified-B]}
+
+### Contradictions Resolved
+- **{file}:{line}** — Pass A: {X}. Pass B: {Y}. **Ruling:** {decision + reasoning}
+
+### Blind Spots
+{Patterns where one pass consistently missed issues the other caught}
+```
+
+**Confidence scoring:**
+- **High**: >80% of findings agreed, no unresolved contradictions
+- **Medium**: 50-80% agreement, or 1-2 contradictions resolved with clear reasoning
+- **Low**: <50% agreement, or rulings that required judgment calls
+
+### Step 6A: Post findings (GitHub PRs only)
+
+Same as standard Step 6, but prefix each comment with `[Adversarial — {Agreed|Verified}]`.
+
+---
 
 ## Reviewer Prompts
 

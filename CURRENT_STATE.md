@@ -16,9 +16,10 @@ This repo is building a repeatable AI coding environment for:
 - Claude MCP servers: memory, context7, sequential-thinking, playwright, github (PAT-based)
 - GitHub Spec Kit (`specify` CLI) installed globally via `uv` for spec-driven development
 - Modular global CLAUDE.md template using `@rules/` references instead of inline content
-- Modular rules templates: communication, code-style, testing, git (`claude/templates/rules/`)
-- Skills: frontend, python, csharp, review (19 reviewers), mine-learnings, pr-creator, post-deploy-verify, terraform-diff, session-handoff (`claude/templates/skills/`)
+- MemPalace large-palace fix doc at `claude/templates/mempalace-large-palace-fixes.md`
+- Skills: frontend, python, csharp, review (19 reviewers, adversarial dual-pass), mine-learnings, pr-creator, post-deploy-verify, terraform-diff, session-handoff, learn-eval, quality-gate (`claude/templates/skills/`)
 - Custom agents: ado-manager, deploy-watcher, sagemaker-runner (`claude/templates/agents/`)
+- Modular rules: communication, code-style, testing, git, diagrams (`claude/templates/rules/`)
 - Installer copies rules to `~/.claude/rules/` and skills to `~/.claude/skills/` on `--global` install
 - Optional plugin support: `--with-mempalace`, `--with-caveman` installer flags
 - Optional MCP server support: `--with-atlassian` (OAuth), `--with-ado` (PAT-based) installer flags
