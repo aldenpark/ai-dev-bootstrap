@@ -169,13 +169,25 @@ Skills are activated by the `/skill` command and provide domain-specific convent
 - **python** — Poetry, ruff, pytest, async patterns
 - **csharp** — .NET, xUnit, DI patterns, Testcontainers
 - **review** — multi-agent code review with adversarial dual-pass by default (19 reviewers). Two independent passes run in parallel, then a reconciler compares findings, resolves contradictions, and scores confidence. Use `--quick` for single-pass.
-- **mine-learnings** — extracts actionable learnings from past Claude Code sessions and stores them in `~/.claude/learnings/` as JSONL; includes a Python script to extract unprocessed session transcripts and parallel agents to analyze them
+- **mine-learnings** — extracts actionable learnings from past Claude Code sessions and stores them in `~/.claude/learnings/` as JSONL. Also ships a `export-sharegpt.py` companion that converts sessions into ShareGPT JSONL for fine-tuning or model-vs-model benchmarks (Axolotl / LLaMA-Factory / Unsloth compatible). Tool uses, tool results, and thinking blocks are preserved inline.
 - **pr-creator** — runs `/review` (P1 gate) → lint → tests → creates branch `ai/ap/{ID}-{slug}` → commit → push → PR. Blocks on P1 findings. No reviewer assignment.
 - **post-deploy-verify** — before/after CloudWatch log comparison, ECS health check. Run after deploying to QA or dev.
 - **terraform-diff** — side-by-side tfvars diff across all environments for a service. Flags missing overrides and inconsistencies.
 - **session-handoff** — reads plans, memory, git state, docker/infra health, and generates a briefing for a new session to pick up where the last left off.
 - **learn-eval** — replays merged PRs through the reviewer system, scores how well reviewers would have caught real bugs, outputs a scorecard per reviewer with prompt tuning suggestions.
 - **quality-gate** — configurable pass/fail gate for code reviews. Evaluates `/review` output against thresholds (default/strict/lenient) and returns a binary verdict. Composable with `/pr-creator`.
+
+### Hooks (`~/.claude/hooks/`)
+
+Background automation wired into Claude Code's lifecycle events. Installed by `--with-hooks`.
+
+- **auto-skill-draft** (Stop hook) — after every session, inspects the transcript. If it crosses a threshold (default: 6+ user turns and 8+ tool calls) and doesn't look like a one-off task, forks an async `claude -p` pass that drafts a `SKILL.md` into `~/.claude/skills/drafts/`. Proactive skill generation — the `/mine-learnings` counterpart is reactive. Disable temporarily with `touch ~/.claude/skills/drafts/.disabled`.
+
+### Scheduled Tasks (`~/.claude/cron/`)
+
+Scripts run by launchd (macOS) or cron (Linux). Installed by `--with-learn-eval-cron`.
+
+- **learn-eval-monthly.sh** — runs `/learn-eval` on the 1st of each month. Scorecards land in `~/.claude/learnings/review-evals/`. Closes the feedback loop on reviewer quality without manual triggering. Tune via `LEARN_EVAL_REPOS`, `LEARN_EVAL_COUNT`, `LEARN_EVAL_MODEL` env vars.
 
 ### Custom Agents (`~/.claude/agents/`)
 
@@ -352,8 +364,12 @@ What it does:
 ./claude/scripts/install-claude-mcp-setup.sh --global --with-atlassian
 ./claude/scripts/install-claude-mcp-setup.sh --global --with-ado --ado-org myorg
 
+# Install self-learning automation
+./claude/scripts/install-claude-mcp-setup.sh --global --with-hooks              # Stop hook drafts skills automatically
+./claude/scripts/install-claude-mcp-setup.sh --global --with-learn-eval-cron    # Monthly reviewer-quality eval
+
 # Kitchen sink
-./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman --with-atlassian
+./claude/scripts/install-claude-mcp-setup.sh --global --with-mempalace --with-caveman --with-atlassian --with-hooks --with-learn-eval-cron
 
 # Custom memory directory
 ./claude/scripts/install-claude-mcp-setup.sh --memory-dir "$HOME/.claude-memory/project-name"

@@ -17,6 +17,10 @@ This repo is building a repeatable AI coding environment for:
 - GitHub Spec Kit (`specify` CLI) installed globally via `uv` for spec-driven development
 - Modular global CLAUDE.md template using `@rules/` references instead of inline content
 - MemPalace large-palace fix doc at `claude/templates/mempalace-large-palace-fixes.md`
+- Self-learning automation (three pieces that close the feedback loops):
+  - `claude/templates/hooks/auto-skill-draft.sh` — Stop hook that drafts skills from qualifying sessions (installer: `--with-hooks`)
+  - `claude/templates/skills/mine-learnings/export-sharegpt.py` — ShareGPT JSONL export for fine-tuning / model comparison
+  - `claude/templates/cron/learn-eval-monthly.sh` + launchd plist — monthly reviewer-quality eval (installer: `--with-learn-eval-cron`)
 - Skills: frontend, python, csharp, review (19 reviewers, adversarial dual-pass), mine-learnings, pr-creator, post-deploy-verify, terraform-diff, session-handoff, learn-eval, quality-gate (`claude/templates/skills/`)
 - Custom agents: ado-manager, deploy-watcher, sagemaker-runner (`claude/templates/agents/`)
 - Modular rules: communication, code-style, testing, git, diagrams (`claude/templates/rules/`)

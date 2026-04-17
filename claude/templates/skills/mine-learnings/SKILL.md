@@ -111,3 +111,25 @@ Tell the user:
 - The `.processed-sessions` file prevents reprocessing
 - To reprocess everything, delete `~/.claude/learnings/.processed-sessions`
 - To reset all learnings, delete `~/.claude/learnings/learnings.jsonl` and the processed file
+
+## Optional: Export to ShareGPT for fine-tuning
+
+If the user asks to export sessions for fine-tuning or model comparison (Opus vs Sonnet benchmarking, custom model training, etc.), run the companion script:
+
+```bash
+# All sessions with at least 4 turns
+python3 ~/.claude/skills/mine-learnings/export-sharegpt.py \
+  --out ~/.claude/learnings/sharegpt.jsonl
+
+# Only sessions that already produced learnings — higher signal
+python3 ~/.claude/skills/mine-learnings/export-sharegpt.py \
+  --only-mined ~/.claude/learnings/learnings.jsonl \
+  --out ~/.claude/learnings/sharegpt-mined.jsonl
+
+# Filter by project
+python3 ~/.claude/skills/mine-learnings/export-sharegpt.py \
+  --project-filter SymanticSearch \
+  --out ~/.claude/learnings/sharegpt-symantic.jsonl
+```
+
+Output format is standard ShareGPT — compatible with Axolotl, LLaMA-Factory, and Unsloth. Tool uses, tool results, and thinking blocks are preserved inline so the model learns the full trajectory, not just prose turns.

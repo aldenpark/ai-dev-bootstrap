@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x /Users/alden.park/www/ai-dev-bootstrap/claude/templates/hooks/auto-skill-draft.sh)",
+      "Bash(bash -n /Users/alden.park/www/ai-dev-bootstrap/claude/templates/hooks/auto-skill-draft.sh)"
+    ]
+  }
+}

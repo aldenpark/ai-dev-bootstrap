@@ -11,10 +11,11 @@ Multi-agent code review tailored to the NetDocuments AI platform. Analyzes the d
 ## Usage
 
 ```
-/review              # Adversarial dual-pass review of uncommitted changes (default)
-/review PR_URL       # Adversarial dual-pass review of a GitHub PR
-/review PR_NUMBER    # Adversarial dual-pass review of a PR by number
-/review --files      # Adversarial dual-pass review of staged files only
+/review              # Review uncommitted changes in the active repo
+/review PR_URL       # Review a GitHub PR by URL
+/review PR_NUMBER    # Review a PR by number in the active repo
+/review alias#N      # Review PR #N in a specific repo by alias
+/review --files      # Review staged files only
 /review --quick      # Single-pass review (faster, less thorough)
 ```
 
@@ -22,12 +23,38 @@ Multi-agent code review tailored to the NetDocuments AI platform. Analyzes the d
 
 ### Step 1: Determine review target
 
-Parse the argument:
-- No argument: `git diff HEAD` for uncommitted changes
-- PR URL or number: fetch the diff via `gh pr diff`
-- `--files`: `git diff --cached`
+Parse the argument to identify the repo and PR/diff:
 
-**Repo resolution for PR URLs:** When the argument is a GitHub PR URL (e.g. `https://github.com/NetDocs-Apps/repo-name/pull/123`), extract the repo name from the URL and locate the local checkout under `~/source/netdocuments/`. Search all subdirectories: `find ~/source/netdocuments -maxdepth 2 -type d -name "<repo-name>"`. If found, `cd` into it before fetching the diff or launching agents — this ensures agents can read source files for context. If not found locally, warn the user and proceed with diff-only review.
+**1a. Repo resolution (in priority order):**
+
+1. **Explicit alias** — if the argument contains `#` (e.g. `lib#10`, `chunkreindex#9`), split on `#` to get repo alias + PR number. Resolve the alias using the table below.
+2. **Full PR URL** — extract repo name from URL and locate under `~/www/SymanticSearch/`.
+3. **IDE context** — if the user has a file open (visible in `ide_opened_file` or `ide_selection` tags), detect which repo it belongs to by checking the file path against `~/www/SymanticSearch/*/`.
+4. **Current working directory** — use `git rev-parse --show-toplevel` to detect the repo.
+
+If the repo cannot be determined, ask the user: "Which repo? (e.g. `lib#10`, `chunkembed#221`)"
+
+**Repo aliases** (match any unique prefix):
+
+| Alias | Repo | Path |
+|-------|------|------|
+| `lib` | ai-search-chunkembed-lib | ~/www/SymanticSearch/ai-search-chunkembed-lib |
+| `chunkembed`, `embed` | search-index-chunkembed-svc | ~/www/SymanticSearch/search-index-chunkembed-svc |
+| `chunkreindex`, `reindex` | ai-search-chunkreindex-svc | ~/www/SymanticSearch/ai-search-chunkreindex-svc |
+| `query` | search-api-query-svc | ~/www/SymanticSearch/search-api-query-svc |
+| `writer` | search-index-writer-wrk | ~/www/SymanticSearch/search-index-writer-wrk |
+| `content` | search-index-content-svc | ~/www/SymanticSearch/search-index-content-svc |
+| `metadata` | search-index-chunkmetadata-svc | ~/www/SymanticSearch/search-index-chunkmetadata-svc |
+| `doc` | doc-content-api-svc | ~/www/SymanticSearch/doc-content-api-svc |
+| `reindex-svc` | ai-search-reindex-svc | ~/www/SymanticSearch/ai-search-reindex-svc |
+| `reindex-wrk` | ai-search-reindex-wrk | ~/www/SymanticSearch/ai-search-reindex-wrk |
+| `common` | search-index-common-lib | ~/www/SymanticSearch/search-index-common-lib |
+| `callerid` | eng-shared-calleridentitypython-lib | ~/www/SymanticSearch/eng-shared-calleridentitypython-lib |
+
+**1b. Diff resolution:**
+- No argument: `git diff HEAD` for uncommitted changes
+- PR URL or number: `cd` into the resolved repo path, then `gh pr diff`
+- `--files`: `git diff --cached`
 
 Save the diff to a temp file. If the diff is empty, tell the user and stop.
 

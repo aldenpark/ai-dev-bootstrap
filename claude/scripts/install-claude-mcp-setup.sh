@@ -16,6 +16,8 @@ with_caveman=0
 with_atlassian=0
 with_ado=0
 ado_org=""
+with_hooks=0
+with_learn_eval_cron=0
 
 usage() {
   cat <<'EOF'
@@ -34,6 +36,8 @@ Options:
   --with-atlassian               Add Atlassian MCP (Jira, Confluence, Compass via OAuth).
   --with-ado                     Add Azure DevOps MCP (work items, repos, PRs).
   --ado-org NAME                 Azure DevOps org name (e.g. netdocuments).
+  --with-hooks                   Install Stop hooks (auto-skill-draft) and wire into settings.json.
+  --with-learn-eval-cron         Install monthly learn-eval cron (launchd on macOS, crontab on Linux).
   -h, --help                     Show this help message.
 EOF
 }
@@ -329,6 +333,14 @@ while (($#)); do
       with_ado=1
       shift
       ;;
+    --with-hooks)
+      with_hooks=1
+      shift
+      ;;
+    --with-learn-eval-cron)
+      with_learn_eval_cron=1
+      shift
+      ;;
     --ado-org)
       if [ "$#" -lt 2 ]; then
         printf '%s\n' '--ado-org requires an org name' >&2
@@ -573,6 +585,91 @@ if [ "$install_global" -eq 1 ]; then
     fi
   fi
 
+  # Optional: Install Stop hooks (auto-skill-draft)
+  if [ "$with_hooks" -eq 1 ]; then
+    printf '\nInstalling Claude Code hooks...\n'
+    template_hooks_dir="$script_dir/../templates/hooks"
+    target_hooks_dir="$HOME/.claude/hooks"
+    mkdir -p "$target_hooks_dir" "$HOME/.claude/skills/drafts"
+
+    if [ -f "$template_hooks_dir/auto-skill-draft.sh" ]; then
+      cp "$template_hooks_dir/auto-skill-draft.sh" "$target_hooks_dir/auto-skill-draft.sh"
+      chmod +x "$target_hooks_dir/auto-skill-draft.sh"
+      printf 'Installed auto-skill-draft hook to: %s\n' "$target_hooks_dir/auto-skill-draft.sh"
+    fi
+
+    # Merge the hook into ~/.claude/settings.json (idempotent)
+    settings_file="$HOME/.claude/settings.json"
+    python3 - "$settings_file" <<'PYEOF'
+import json, os, sys
+p = sys.argv[1]
+data = {}
+if os.path.exists(p):
+    try:
+        with open(p) as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+hooks = data.setdefault("hooks", {})
+stop = hooks.setdefault("Stop", [])
+cmd = "~/.claude/hooks/auto-skill-draft.sh"
+# Skip if already present
+for entry in stop:
+    for h in entry.get("hooks", []):
+        if h.get("command") == cmd:
+            sys.exit(0)
+stop.append({"matcher": "", "hooks": [{"type": "command", "command": cmd}]})
+os.makedirs(os.path.dirname(p), exist_ok=True)
+with open(p, "w") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+PYEOF
+    printf 'Wired auto-skill-draft into: %s\n' "$settings_file"
+    printf 'Disable without uninstalling: touch ~/.claude/skills/drafts/.disabled\n'
+  fi
+
+  # Optional: Install monthly learn-eval cron (macOS launchd / Linux cron)
+  if [ "$with_learn_eval_cron" -eq 1 ]; then
+    printf '\nInstalling monthly learn-eval schedule...\n'
+    template_cron_dir="$script_dir/../templates/cron"
+    target_cron_dir="$HOME/.claude/cron"
+    mkdir -p "$target_cron_dir" "$HOME/.claude/learnings/review-evals/logs"
+
+    if [ -f "$template_cron_dir/learn-eval-monthly.sh" ]; then
+      cp "$template_cron_dir/learn-eval-monthly.sh" "$target_cron_dir/learn-eval-monthly.sh"
+      chmod +x "$target_cron_dir/learn-eval-monthly.sh"
+    fi
+
+    case "$(uname)" in
+      Darwin)
+        plist_src="$template_cron_dir/com.user.claude.learn-eval.plist"
+        plist_dst="$HOME/Library/LaunchAgents/com.user.claude.learn-eval.plist"
+        if [ -f "$plist_src" ]; then
+          mkdir -p "$HOME/Library/LaunchAgents"
+          sed "s|USERNAME|$(whoami)|g" "$plist_src" > "$plist_dst"
+          launchctl unload "$plist_dst" 2>/dev/null || true
+          launchctl load "$plist_dst"
+          printf 'Loaded launchd job: %s\n' "$plist_dst"
+          printf 'Test-run: launchctl start com.user.claude.learn-eval\n'
+          printf 'Uninstall: launchctl unload %s && rm %s\n' "$plist_dst" "$plist_dst"
+        fi
+        ;;
+      Linux)
+        cron_line="0 9 1 * * $target_cron_dir/learn-eval-monthly.sh"
+        if crontab -l 2>/dev/null | grep -qF "learn-eval-monthly.sh"; then
+          printf 'Cron entry already present — skipping.\n'
+        else
+          (crontab -l 2>/dev/null; echo "$cron_line") | crontab -
+          printf 'Added cron entry: %s\n' "$cron_line"
+          printf 'Uninstall: crontab -e and remove the learn-eval-monthly.sh line.\n'
+        fi
+        ;;
+      *)
+        printf 'Unsupported OS — install the schedule manually. See claude/templates/cron/README.md\n' >&2
+        ;;
+    esac
+  fi
+
   printf '\nGlobal setup complete.\n\n'
   printf 'Memory file: %s\n' "$memory_file"
   printf 'Claude config: %s\n' "$HOME/.claude.json"
@@ -613,6 +710,14 @@ if [ "$install_global" -eq 1 ]; then
 
   if [ "$with_ado" -eq 1 ]; then
     printf 'Azure DevOps MCP: configured\n'
+  fi
+
+  if [ "$with_hooks" -eq 1 ]; then
+    printf 'Hooks: auto-skill-draft wired into ~/.claude/settings.json\n'
+  fi
+
+  if [ "$with_learn_eval_cron" -eq 1 ]; then
+    printf 'Cron: monthly learn-eval scheduled (1st of each month, 09:00)\n'
   fi
 
   cat <<'EOF'

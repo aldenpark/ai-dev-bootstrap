@@ -45,6 +45,16 @@
 - Azure DevOps (`--with-ado`): work items, repos, PRs via `@azure-devops/mcp` — requires org name
 - plugins are installed via the Claude Code plugin marketplace; MCP servers via `claude mcp add`
 
+### Self-Learning Stack (Hermes-inspired, Claude-native)
+
+Reviewed Nous Hermes Agent (self-improving framework, launched Feb 2026) as a potential outer-loop controller. Decided not to adopt wholesale — Claude Code stays the controller. Selectively imported three mechanics:
+
+- **Auto-skill-draft Stop hook**: after a qualifying session (heuristic: >=6 user turns AND >=8 tool calls), forks an async `claude -p` pass to draft a SKILL.md into `~/.claude/skills/drafts/`. Closes the "proactive skill generation" gap that `/mine-learnings` (reactive) left open.
+- **ShareGPT export** from mine-learnings: keeps the fine-tuning / model-comparison pipeline wired without being used today. Cheap to keep in place.
+- **Monthly learn-eval cron**: moves reviewer-quality scoring from manual (run-when-remembered) to scheduled. macOS launchd and Linux cron both supported.
+
+Explicitly skipped: Honcho user modeling (overlaps with auto-memory), Atropos RL (no payoff without switching models), multi-platform intake (terminal/IDE is sufficient).
+
 ### Memory Strategy
 
 - keep the official MCP memory server as the primary structured memory backend
