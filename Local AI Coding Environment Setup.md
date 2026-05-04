@@ -25,9 +25,9 @@ This repo is designed to improve the main AI coding failure modes:
 Use this repo as two related workflows, not one identical stack:
 
 - `Codex -> spec-kit`
-  Best when you want stronger structure, explicit plans, and phased implementation.
-- `Claude -> task-master`
-  Best when you want stronger execution flow, next-task handling, and backlog management.
+  Best when you want stronger structure, explicit plans, phased implementation, and Codex-native reusable skills, agents, rules, and review workflows.
+- `Claude -> spec-kit`
+  Best when you want spec-driven planning plus Claude-native execution features like sub-agents, hooks, and worktrees.
 
 Both workflows share the same broad ideas:
 
@@ -50,6 +50,13 @@ Codex path:
 - Sequential Thinking MCP
 - Playwright MCP
 - GitHub MCP
+- global Codex instructions rendered into `~/.codex/AGENTS.md`
+- modular rule fragments in `~/.codex/rules-md/`
+- global skills in `~/.codex/skills/`
+- global custom agents in `~/.codex/agents/`
+- optional Stop hook and monthly learn-eval scheduler
+- optional MemPalace Cloud MCP
+- optional local Qwen3.6 coding worker through `llama.cpp`/`llama-server`
 
 Claude path:
 
@@ -83,6 +90,7 @@ Shared path:
 Codex:
 
 ```bash
+# Global install (default)
 ./codex/scripts/install-codex-mcp-setup.sh
 ```
 
@@ -97,7 +105,12 @@ Useful installer options:
 ```bash
 ./codex/scripts/install-codex-mcp-setup.sh --prompt-github-pat
 ./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
-./claude/scripts/install-claude-mcp-setup.sh --prompt-github-pat
+./codex/scripts/install-codex-mcp-setup.sh --write-vscode-workspace-config
+./codex/scripts/install-codex-mcp-setup.sh --with-hooks --with-learn-eval-cron
+./codex/scripts/install-codex-mcp-setup.sh --with-mempalace
+codex mcp login mempalace-cloud
+./codex/scripts/install-codex-mcp-setup.sh --with-qwen36-local
+./claude/scripts/install-claude-mcp-setup.sh --github-pat ghp_yourtoken
 ./claude/scripts/install-claude-mcp-setup.sh --skip-playwright
 ```
 
@@ -105,8 +118,15 @@ Useful installer options:
 
 This repo has already been validated locally for:
 
+- Codex global MCP install to `~/.codex/config.toml`
+- Codex global rules install to `~/.codex/AGENTS.md` and `~/.codex/rules-md/`
+- Codex global skills install to `~/.codex/skills/`
+- Codex global custom agents install to `~/.codex/agents/`
 - Codex CLI + MCP
 - Codex in VS Code
+- Codex installer smoke test (`codex/scripts/test-codex-installer.sh`)
+- Codex hook and learn-eval scheduler install paths
+- Codex local Qwen3.6 coding-worker install path
 - Claude + MCP
 - Context7 lookup flow
 - Memory MCP

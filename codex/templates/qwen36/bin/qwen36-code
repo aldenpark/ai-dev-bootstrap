@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: qwen36-code [-f FILE ...] [PROMPT ...]
+
+Sends a coding prompt to local Qwen3.6 through qwen36-server.
+Reads additional prompt text from stdin when stdin is piped.
+
+Environment:
+  QWEN36_HOST=127.0.0.1
+  QWEN36_PORT=8080
+  QWEN36_CTX=8192
+  QWEN36_MAX_TOKENS=4096
+  QWEN36_TEMPERATURE=0.1
+  QWEN36_KEEP_SERVER=0
+USAGE
+}
+
+files=()
+prompt_parts=()
+
+while (($#)); do
+  case "$1" in
+    -f|--file)
+      shift
+      [[ $# -gt 0 ]] || { echo "missing file after -f" >&2; exit 2; }
+      files+=("$1")
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      prompt_parts+=("$@")
+      break
+      ;;
+    *)
+      prompt_parts+=("$1")
+      ;;
+  esac
+  shift
+done
+
+host="${QWEN36_HOST:-127.0.0.1}"
+port="${QWEN36_PORT:-8080}"
+base_url="http://${host}:${port}/v1"
+max_tokens="${QWEN36_MAX_TOKENS:-4096}"
+temperature="${QWEN36_TEMPERATURE:-0.1}"
+keep_server="${QWEN36_KEEP_SERVER:-0}"
+started_pid=""
+
+server_ready() {
+  curl -fsS "${base_url}/models" >/dev/null 2>&1
+}
+
+if ! server_ready; then
+  mkdir -p "$HOME/.cache/qwen36"
+  QWEN36_HOST="$host" QWEN36_PORT="$port" QWEN36_CTX="${QWEN36_CTX:-8192}" \
+    qwen36-server --no-warmup >"$HOME/.cache/qwen36/server.log" 2>&1 &
+  started_pid="$!"
+
+  for _ in $(seq 1 120); do
+    server_ready && break
+    sleep 1
+  done
+
+  if ! server_ready; then
+    [[ -n "$started_pid" ]] && kill "$started_pid" 2>/dev/null || true
+    echo "qwen36-server did not become ready; see ~/.cache/qwen36/server.log" >&2
+    exit 1
+  fi
+fi
+
+cleanup() {
+  if [[ -n "$started_pid" && "$keep_server" != "1" ]]; then
+    kill "$started_pid" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+prompt="${prompt_parts[*]}"
+if [[ ! -t 0 ]]; then
+  stdin_text="$(cat)"
+  prompt="${prompt}"$'\n'"${stdin_text}"
+fi
+
+context=""
+for file in "${files[@]}"; do
+  if [[ ! -f "$file" ]]; then
+    echo "file not found: $file" >&2
+    exit 2
+  fi
+  context+=$'\n\n'"--- FILE: ${file} ---"$'\n'
+  context+="$(cat "$file")"
+done
+
+user_content="${prompt}${context}"
+
+jq -n \
+  --arg model "qwen3.6" \
+  --arg system "You are a local coding worker. Produce concise, concrete code or a unified diff when asked. Do not claim you changed files; Codex will apply and test changes." \
+  --arg user "$user_content" \
+  --argjson max_tokens "$max_tokens" \
+  --argjson temperature "$temperature" \
+  '{
+    model: $model,
+    messages: [
+      {role: "system", content: $system},
+      {role: "user", content: $user}
+    ],
+    max_tokens: $max_tokens,
+    temperature: $temperature
+  }' \
+  | curl -fsS "${base_url}/chat/completions" \
+      -H 'Content-Type: application/json' \
+      --data-binary @- \
+  | jq -r '.choices[0].message.content'

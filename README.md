@@ -37,12 +37,22 @@ Recommended split:
 ### Codex workflow
 
 - Codex CLI and VS Code integration
+- Context7 MCP (versioned library/framework docs)
 - OpenAI Developer Docs MCP
 - Memory MCP
 - Sequential Thinking MCP
 - Playwright MCP
 - GitHub MCP
+- Global Codex rules rendered into `~/.codex/AGENTS.md`
+- Global rule fragments in `~/.codex/rules-md/`
+- Global skills in `~/.codex/skills/`
+- Global custom agents in `~/.codex/agents/`
+- Optional Codex Stop hook for auto-skill-draft in `~/.codex/hooks.json`
+- Optional monthly learn-eval scheduler in `~/.codex/cron/`
+- Optional MemPalace Cloud MCP for cross-tool memory
+- Optional local Qwen3.6 coding worker through `llama.cpp`/`llama-server`
 - recommended planning layer: `spec-kit`
+- installer target: global Codex MCP config in `~/.codex/config.toml`
 
 ### Claude workflow
 
@@ -91,6 +101,7 @@ Recommended order:
 ### Codex
 
 ```bash
+# Global install (default — writes Codex MCP config to ~/.codex/config.toml)
 ./codex/scripts/install-codex-mcp-setup.sh
 ```
 
@@ -112,6 +123,37 @@ Recommended order:
 - [Promptfoo starter evals](evals/README.md)
 
 ### Common options
+
+Codex installer options:
+
+```bash
+# Install the VS Code Codex extension
+./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
+
+# Prompt for the GitHub PAT and persist it to the detected shell startup file
+./codex/scripts/install-codex-mcp-setup.sh --prompt-github-pat
+
+# Also write a workspace-level .vscode/mcp.json fallback config
+./codex/scripts/install-codex-mcp-setup.sh --write-vscode-workspace-config
+
+# Override the default global memory directory
+./codex/scripts/install-codex-mcp-setup.sh --memory-dir "$HOME/.codex-memory/local-dev"
+
+# Skip global rules, skills, or agents
+./codex/scripts/install-codex-mcp-setup.sh --skip-rules
+./codex/scripts/install-codex-mcp-setup.sh --skip-skills
+./codex/scripts/install-codex-mcp-setup.sh --skip-agents
+
+# Install the Codex hook and monthly learn-eval scheduler
+./codex/scripts/install-codex-mcp-setup.sh --with-hooks --with-learn-eval-cron
+
+# Install optional MemPalace Cloud memory
+./codex/scripts/install-codex-mcp-setup.sh --with-mempalace
+codex mcp login mempalace-cloud
+
+# Install local Qwen3.6 coding worker
+./codex/scripts/install-codex-mcp-setup.sh --with-qwen36-local
+```
 
 Claude installer options:
 
@@ -146,16 +188,29 @@ Without `--global`, configs are written to the current repo only (`.mcp.json` an
 - `specify` CLI (GitHub Spec Kit) is installed via `uv`
 - GitHub PAT is auto-detected from env/config or prompted interactively
 
-Codex-only:
+Codex notes:
 
-```bash
-# Install VS Code Codex extension
-./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
-```
+- Codex MCP servers are added globally by default to `~/.codex/config.toml`
+- the default Codex memory file is `~/.ai/codex/memory.json`
+- global Codex instructions are rendered into `~/.codex/AGENTS.md` from rule fragments in `~/.codex/rules-md/`
+- Codex skills install to `~/.codex/skills/`
+- Codex custom agents install to `~/.codex/agents/`
+- the Stop hook is opt-in via `--with-hooks`
+- the monthly learn-eval scheduler is opt-in via `--with-learn-eval-cron`
+- MemPalace Cloud is opt-in via `--with-mempalace`
+- local Qwen3.6 coding-worker setup is opt-in via `--with-qwen36-local`
+- workspace `.vscode/mcp.json` generation is opt-in via `--write-vscode-workspace-config`
 
 ## Main Files
 
 - `codex/README.md`: Codex setup plan and operating notes
+- `codex/templates/global-AGENTS.md`: template for global Codex instructions
+- `codex/templates/rules/`: modular Codex rule fragments
+- `codex/templates/skills/`: Codex-native reusable skills
+- `codex/templates/agents/`: Codex custom agents
+- `codex/templates/hooks/`: optional Codex hook automation
+- `codex/templates/cron/`: optional Codex learn-eval scheduler assets
+- `codex/templates/qwen36/`: optional local Qwen3.6 coding-worker assets
 - `claude/README.md`: Claude setup plan and operating notes
 - `claude/templates/global-CLAUDE.md`: template for global Claude rules (installed to `~/.claude/CLAUDE.md`)
 - `claude/templates/rules/`: modular behavior rules (installed to `~/.claude/rules/`)
@@ -166,10 +221,12 @@ Codex-only:
 - `DECISIONS.md`: durable repo decisions
 - `AGENTS.md`: repo-local behavior rules for Codex
 - `CLAUDE.md`: repo-local behavior rules for Claude
-- `codex/scripts/install-codex-mcp-setup.sh`: portable installer for Codex + MCP
+- `codex/scripts/install-codex-mcp-setup.sh`: portable installer for Codex + MCP (global by default)
+- `codex/scripts/install-qwen36-local.sh`: optional local Qwen3.6 coding-worker installer
+- `codex/scripts/test-codex-installer.sh`: Codex installer smoke test
 - `claude/scripts/install-claude-mcp-setup.sh`: portable installer for Claude + MCP (supports `--global`)
 - `.mcp.json`: Claude Code project-level MCP configuration
-- `.vscode/mcp.json`: VS Code workspace MCP configuration
+- `.vscode/mcp.json`: optional VS Code workspace MCP fallback configuration
 
 ## Status
 

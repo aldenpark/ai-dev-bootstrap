@@ -7,7 +7,7 @@ If you want the repo overview or the future multi-agent layout, start at the roo
 Recommended workflow split for this repo:
 
 - `codex/` uses `spec-kit` as the preferred structure and planning layer
-- `claude/` uses `task-master` as the preferred execution and backlog layer
+- `claude/` uses `spec-kit` (GitHub Spec Kit) as the planning layer
 - shared tools like Context7, Repomix, and Promptfoo live in `shared/`
 - shared repo state lives in `CURRENT_STATE.md` and `DECISIONS.md`
 
@@ -221,14 +221,50 @@ For VS Code:
 
 Important detail:
 
-OpenAI documents that your MCP server configuration is shared between the Codex CLI and the Codex IDE extension, so you only need to configure Codex MCP servers once.
+The installer and manual `codex mcp add ...` commands write to Codex user config in `~/.codex/config.toml`. Start there first, then use workspace `mcp.json` only if you explicitly want a VS Code fallback file.
 
 ## Phase 2: Install The Core MCP Stack In Codex
 
-Create a folder for persistent project memory:
+Recommended path:
 
 ```bash
-mkdir -p ./.ai
+./codex/scripts/install-codex-mcp-setup.sh
+```
+
+What the installer does:
+
+- adds the Codex MCP servers globally to `~/.codex/config.toml`
+- uses `~/.ai/codex/memory.json` as the default memory file
+- renders global Codex instructions into `~/.codex/AGENTS.md`
+- installs modular rule fragments into `~/.codex/rules-md/`
+- installs Codex-native skills into `~/.codex/skills/`
+- installs Codex custom agents into `~/.codex/agents/`
+- auto-detects a GitHub PAT env var or existing Codex GitHub config before changing the env var name
+- attempts to install `specify` via `uv` when `uv` is available
+- can optionally install the Stop hook into `~/.codex/hooks.json`
+- can optionally install the monthly learn-eval scheduler into `~/.codex/cron/`
+- can optionally add MemPalace Cloud and its memory protocol with `--with-mempalace`
+- writes `.vscode/mcp.json` only if you pass `--write-vscode-workspace-config`
+
+Useful examples:
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --install-vscode-extension
+./codex/scripts/install-codex-mcp-setup.sh --prompt-github-pat
+./codex/scripts/install-codex-mcp-setup.sh --write-vscode-workspace-config
+./codex/scripts/install-codex-mcp-setup.sh --memory-dir "$HOME/.codex-memory/local-dev"
+./codex/scripts/install-codex-mcp-setup.sh --skip-rules --skip-skills --skip-agents
+./codex/scripts/install-codex-mcp-setup.sh --with-hooks --with-learn-eval-cron
+./codex/scripts/install-codex-mcp-setup.sh --with-mempalace
+codex mcp login mempalace-cloud
+```
+
+Manual path:
+
+`codex mcp add` writes to global Codex config by default, so use a global memory path unless you deliberately want repo-scoped memory.
+
+```bash
+mkdir -p "$HOME/.ai/codex"
 ```
 
 Add the OpenAI docs server:
@@ -255,7 +291,7 @@ Add the memory server:
 
 ```bash
 codex mcp add memory \
-  --env MEMORY_FILE_PATH="$(pwd)/.ai/memory.json" \
+  --env MEMORY_FILE_PATH="$HOME/.ai/codex/memory.json" \
   -- npx -y @modelcontextprotocol/server-memory
 ```
 
@@ -276,11 +312,26 @@ codex mcp add playwright \
 Add GitHub through the hosted remote MCP server:
 
 ```bash
-export GITHUB_MCP_PAT=YOUR_GITHUB_PAT
+export GITHUB_PAT=YOUR_GITHUB_PAT
 codex mcp add github \
   --url https://api.githubcopilot.com/mcp/ \
-  --bearer-token-env-var GITHUB_MCP_PAT
+  --bearer-token-env-var GITHUB_PAT
 ```
+
+Optional: add MemPalace Cloud for cross-session memory:
+
+```bash
+codex mcp add mempalace-cloud --url https://api.mempalace.cloud/mcp
+codex mcp login mempalace-cloud
+```
+
+The installer currently prefers, in order:
+
+- `GITHUB_MCP_PAT` if it is already set
+- `GITHUB_PAT`
+- `GITHUB_PERSONAL_ACCESS_TOKEN`
+- the env var name already referenced by `~/.codex/config.toml`
+- otherwise `GITHUB_PAT`
 
 Recommended GitHub PAT scopes:
 
@@ -389,7 +440,13 @@ Use the OpenAI docs MCP only and summarize what the Codex IDE page is for in one
 
 VS Code also supports MCP servers through workspace configuration. This is useful if you want a backup path for Agent Mode or other MCP-aware extensions.
 
-I added a starter config at:
+The installer no longer rewrites this by default. If you want the fallback file, either use the checked-in starter config or run:
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --write-vscode-workspace-config
+```
+
+Starter config location:
 
 - `.vscode/mcp.json`
 
@@ -502,7 +559,7 @@ codex mcp add context7 \
 codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp
 
 codex mcp add memory \
-  --env MEMORY_FILE_PATH="$(pwd)/.ai/memory.json" \
+  --env MEMORY_FILE_PATH="$HOME/.ai/codex/memory.json" \
   -- npx -y @modelcontextprotocol/server-memory
 
 codex mcp add playwright \
@@ -529,7 +586,7 @@ After setup, verify these:
 - Context7 can answer current library/framework questions
 - Codex can answer current docs questions with search enabled
 - Playwright can open your local app
-- memory writes persist to `./.ai/memory.json`
+- memory writes persist to `~/.ai/codex/memory.json` by default
 - GitHub queries work for your repos
 
 ## Leave It As Is For Now
@@ -568,9 +625,18 @@ Use the installer script in this repo:
 What it does:
 
 - checks for `node`, `npm`, `npx`, and `codex`
-- creates the repo-local `.ai` memory directory
-- configures the Codex MCP servers globally
-- rewrites `.vscode/mcp.json` with the correct memory path for the current repo location
+- configures the Codex MCP servers globally in `~/.codex/config.toml`
+- uses `~/.ai/codex/memory.json` as the default memory file unless you override it
+- renders global Codex instructions into `~/.codex/AGENTS.md`
+- installs rule fragments into `~/.codex/rules-md/`
+- installs skills into `~/.codex/skills/`
+- installs custom agents into `~/.codex/agents/`
+- attempts to install `specify` via `uv` when `uv` is available
+- can install the Stop hook when you pass `--with-hooks`
+- can install the monthly learn-eval scheduler when you pass `--with-learn-eval-cron`
+- can install MemPalace Cloud when you pass `--with-mempalace`
+- can install the local Qwen3.6 coding worker when you pass `--with-qwen36-local`
+- writes `.vscode/mcp.json` only if you explicitly pass `--write-vscode-workspace-config`
 - optionally installs the VS Code Codex extension
 
 Useful examples:
@@ -588,12 +654,53 @@ Useful examples:
 ```
 
 ```bash
+./codex/scripts/install-codex-mcp-setup.sh --write-vscode-workspace-config
+```
+
+```bash
 ./codex/scripts/install-codex-mcp-setup.sh --memory-dir "$HOME/.codex-memory/local-dev"
 ```
 
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --skip-rules --skip-skills --skip-agents
+```
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --with-hooks --with-learn-eval-cron
+```
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --with-mempalace
+codex mcp login mempalace-cloud
+```
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh --with-qwen36-local
+```
+
+For a fast config-only install when `llama.cpp` and the model already exist:
+
+```bash
+./codex/scripts/install-codex-mcp-setup.sh \
+  --with-qwen36-local \
+  --qwen36-skip-build \
+  --qwen36-skip-model
+```
+
+The Qwen installer:
+
+- installs `qwen36-server` and `qwen36-code` into `~/.local/bin`
+- installs the `qwen36-coder` skill into `~/.codex/skills`
+- installs the local-Qwen coding rule into `~/.codex/rules-md` and re-renders `~/.codex/AGENTS.md`
+- builds `llama.cpp` with CUDA when `nvcc` is available, otherwise CPU-only
+- downloads `Qwen3.6-35B-A3B-UD-IQ4_NL.gguf` to `~/models/qwen3.6-35b-a3b`
+
+This is not added to Codex `/model`. Direct `llama-server` provider wiring was tested and rejected by `llama-server` because Codex sends non-function tool schemas. The supported path is Codex-as-controller plus `qwen36-code` as a local drafting worker.
+
 Important GitHub note:
 
-- the script configures the GitHub MCP to read `GITHUB_MCP_PAT`
+- the script prefers `GITHUB_MCP_PAT`, then `GITHUB_PAT`, then `GITHUB_PERSONAL_ACCESS_TOKEN`, then the env var name already wired into Codex config
+- if none of those exist, the default env var name becomes `GITHUB_PAT`
 - if you pass `--prompt-github-pat`, the script securely prompts for the token and writes a managed export block into the detected shell startup file
 - on modern macOS with the default `zsh` shell, that will usually be `~/.zprofile`
 - on `bash`, the script prefers `~/.bash_profile` if it exists and otherwise falls back to `~/.profile`
@@ -633,6 +740,7 @@ If memory feels noisy:
 - OpenAI Docs MCP: https://platform.openai.com/docs/docs-mcp
 - OpenAI MCP docs: https://platform.openai.com/docs/mcp/
 - Codex CLI README: https://github.com/openai/codex
+- GitHub Spec Kit: https://github.com/github/spec-kit
 - Playwright MCP: https://github.com/microsoft/playwright-mcp
 - GitHub MCP server: https://github.com/github/github-mcp-server
 - MCP reference servers: https://github.com/modelcontextprotocol/servers

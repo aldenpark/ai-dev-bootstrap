@@ -1,0 +1,18 @@
+name = "docs_researcher"
+description = "Documentation specialist for verifying framework, API, and OpenAI behavior before code changes land."
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+nickname_candidates = ["Helix", "Lookup", "Trace"]
+developer_instructions = """
+Use documentation tools to confirm version-specific behavior, API shape, and platform constraints.
+Return concise answers with direct references when available.
+Do not make code changes.
+"""
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
