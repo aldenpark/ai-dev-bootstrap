@@ -264,6 +264,34 @@ target_path.write_text(updated.rstrip() + "\n", encoding="utf-8")
 PY
 }
 
+write_managed_trusted_projects() {
+  local config_file="$1"
+  local marker_begin="# >>> ai-dev-bootstrap trusted projects >>>"
+  local marker_end="# <<< ai-dev-bootstrap trusted projects >>>"
+  local temp_file
+  local home_dir
+  local llama_repo
+
+  home_dir="$(cd "$HOME" && pwd)"
+  llama_repo="$home_dir/dev/llama.cpp"
+  temp_file="$(mktemp)"
+
+  {
+    printf '[projects."%s"]\n' "$home_dir"
+    printf 'trust_level = "trusted"\n\n'
+    printf '[projects."%s"]\n' "$repo_root"
+    printf 'trust_level = "trusted"\n'
+
+    if [ -d "$llama_repo" ]; then
+      printf '\n[projects."%s"]\n' "$llama_repo"
+      printf 'trust_level = "trusted"\n'
+    fi
+  } > "$temp_file"
+
+  replace_managed_block_in_file "$config_file" "$marker_begin" "$marker_end" "$temp_file"
+  rm -f "$temp_file"
+}
+
 upsert_http_mcp_server_config() {
   local config_file="$1"
   local server_name="$2"
@@ -674,6 +702,7 @@ install_specify_cli
 mkdir -p "$memory_dir"
 mkdir -p "$codex_home" "$codex_learnings_dir"
 memory_dir="$(cd "$memory_dir" && pwd)"
+repo_root="$(cd "$repo_root" && pwd)"
 memory_file="$memory_dir/memory.json"
 shell_startup_file="$(detect_shell_startup_file)"
 
@@ -682,6 +711,7 @@ configure_mcp_server context7 -- npx -y @upstash/context7-mcp
 configure_mcp_server memory --env MEMORY_FILE_PATH="$memory_file" -- npx -y @modelcontextprotocol/server-memory
 configure_mcp_server sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
 configure_mcp_server playwright -- npx @playwright/mcp@latest
+write_managed_trusted_projects "$codex_config_file"
 
 if [ "$skip_github" -eq 0 ]; then
   if [ "$prompt_github_pat" -eq 1 ]; then

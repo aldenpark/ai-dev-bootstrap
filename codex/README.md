@@ -234,6 +234,7 @@ Recommended path:
 What the installer does:
 
 - adds the Codex MCP servers globally to `~/.codex/config.toml`
+- writes managed trusted-project entries using machine-specific absolute paths derived from the current `HOME` and repo location; do not use `$HOME` literals inside `[projects."..."]` keys
 - uses `~/.ai/codex/memory.json` as the default memory file
 - renders global Codex instructions into `~/.codex/AGENTS.md`
 - installs modular rule fragments into `~/.codex/rules-md/`

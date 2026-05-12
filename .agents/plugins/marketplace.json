@@ -1,7 +1,7 @@
 {
-  "name": "alden-local",
+  "name": "ai-dev-bootstrap-local",
   "interface": {
-    "displayName": "Alden Local Plugins"
+    "displayName": "Local Plugins"
   },
   "plugins": [
     {
