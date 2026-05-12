@@ -32,6 +32,8 @@ This repo is building a repeatable AI coding environment for:
 - direct `Codex` custom-provider wiring to `llama-server` was tested and not kept because Codex sends non-function tools that `llama-server` rejects
 - live user install verified for global Codex rules, skills, agents, hooks, monthly learn-eval cron, and optional MemPalace Cloud wiring
 - live Codex exec verification completed for `$session-handoff`, and the real hook path produced a draft skill under `~/.codex/learnings/skill-drafts/`
+- repo-local Codex plugin bundle scaffold added at `plugins/ai-dev-bootstrap-codex/` with marketplace example at `.agents/plugins/marketplace.json`
+- repo-local cross-repo project-management Codex plugin scaffold added at `plugins/ai-dev-bootstrap-projects/` with a file-backed project hub workflow and external PM/wiki extension guidance
 - Claude installer and workflow docs
 - Claude `--global` install: MCP servers to `~/.claude.json`, global rules to `~/.claude/CLAUDE.md`, VS Code user settings
 - Claude MCP servers: memory, context7, sequential-thinking, playwright, github (PAT-based)
@@ -69,4 +71,5 @@ This repo is building a repeatable AI coding environment for:
 - validate `specify` workflow end-to-end on a real feature
 - add more project-specific eval tasks for the Codex review and learn-eval loops
 - expand the Codex-controlled multi-model path from local `Qwen3.6` code drafts into local first-pass review and `Gemini 3` second-pass review
+- decide whether to wire the repo-local Codex plugin bundle into the main installer or keep it as an explicit local opt-in
 - decide whether to port the remaining Claude-only operational agents and optional plugin/MCP extras later

@@ -53,6 +53,8 @@
 - Azure DevOps (`--with-ado`): work items, repos, PRs via `@azure-devops/mcp` — requires org name
 - Codex wires MemPalace Cloud directly into `~/.codex/config.toml` as `mempalace-cloud` and adds a managed protocol block to `~/.codex/AGENTS.md`; login completes via `codex mcp login mempalace-cloud`
 - Claude plugins are installed via the Claude Code plugin marketplace; MCP servers via `claude mcp add`
+- on the Codex side, reusable local workflows can also be packaged as a repo-local plugin bundle under `plugins/` with a local marketplace example under `.agents/plugins/`
+- for multi-repo project/task management in Codex, prefer a file-backed project hub first and then mirror to one external PM/wiki system rather than making the external tool the only source of truth
 
 ### Self-Learning Stack (Hermes-inspired, Claude-native)
 

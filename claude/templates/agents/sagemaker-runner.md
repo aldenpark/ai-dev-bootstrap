@@ -24,7 +24,7 @@ You manage the SageMaker notebook for the NetDocuments AI Search team. You handl
 ### sync-scripts
 Upload local scripts to S3:
 ```bash
-aws s3 sync /Users/alden.park/www/SymanticSearch/local-dev/scripts/sagemaker/ \
+aws s3 sync ~/dev/SymanticSearch/local-dev/scripts/sagemaker/ \
   s3://ai-search-evaluation/sagemaker-scripts/ \
   --profile nd-dev-poweruser --region us-west-2
 ```
@@ -39,7 +39,7 @@ aws s3 cp /tmp/{repo}.tar.gz s3://ai-search-evaluation/sagemaker-scripts/ --prof
 ### upload-wheel
 Build and upload the chunkembed lib wheel:
 ```bash
-cd /Users/alden.park/www/SymanticSearch/ai-search-chunkembed-lib
+cd ~/dev/SymanticSearch/ai-search-chunkembed-lib
 make build
 aws s3 cp dist/*.whl s3://ai-search-evaluation/sagemaker-scripts/ --profile nd-dev-poweruser --region us-west-2
 ```

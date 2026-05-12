@@ -1,0 +1,24 @@
+{
+  "name": "ai-dev-bootstrap-codex",
+  "version": "0.1.0",
+  "description": "Reusable Codex skills for review, handoff, and language-specific development workflows.",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Dev Bootstrap Codex",
+    "shortDescription": "Cross-repo Codex workflow skills",
+    "longDescription": "A local Codex plugin bundle with reusable skills for review, session handoff, and common language workflows.",
+    "developerName": "Local",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use the review skill on my current changes.",
+      "Use session-handoff to summarize this repo.",
+      "Use the frontend skill before touching the UI."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

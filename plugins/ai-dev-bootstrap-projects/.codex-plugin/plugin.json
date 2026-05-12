@@ -1,0 +1,24 @@
+{
+  "name": "ai-dev-bootstrap-projects",
+  "version": "0.1.0",
+  "description": "Cross-repo project and task orchestration for Codex with optional external PM/wiki backends.",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Dev Bootstrap Projects",
+    "shortDescription": "Cross-repo planning and task orchestration",
+    "longDescription": "A local Codex plugin bundle for managing project hubs, task backlogs, and multi-repo execution with optional external system mapping.",
+    "developerName": "Local",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use the project-orchestrator skill to break a large feature into cross-repo tasks.",
+      "Set up a project hub for these repos and create a backlog.",
+      "Use the external-pm-sync skill to map this project to GitHub Projects."
+    ],
+    "brandColor": "#1D4ED8"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "ai-dev-bootstrap-local",
+  "interface": {
+    "displayName": "Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "ai-dev-bootstrap-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-dev-bootstrap-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "ai-dev-bootstrap-projects",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-dev-bootstrap-projects"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
