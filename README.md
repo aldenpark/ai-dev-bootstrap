@@ -51,6 +51,8 @@ Recommended split:
 - Optional monthly learn-eval scheduler in `~/.codex/cron/`
 - Optional MemPalace Cloud MCP for cross-tool memory
 - Optional local Qwen3.6 coding worker through `llama.cpp`/`llama-server`
+- Repo-local Codex plugin bundle scaffold in `plugins/ai-dev-bootstrap-codex/`
+- Repo-local Codex cross-repo project-management plugin scaffold in `plugins/ai-dev-bootstrap-projects/`
 - recommended planning layer: `spec-kit`
 - installer target: global Codex MCP config in `~/.codex/config.toml`
 
@@ -211,6 +213,9 @@ Codex notes:
 - `codex/templates/hooks/`: optional Codex hook automation
 - `codex/templates/cron/`: optional Codex learn-eval scheduler assets
 - `codex/templates/qwen36/`: optional local Qwen3.6 coding-worker assets
+- `plugins/ai-dev-bootstrap-codex/`: repo-local Codex plugin bundle
+- `plugins/ai-dev-bootstrap-projects/`: repo-local Codex project and task orchestration plugin
+- `.agents/plugins/marketplace.json`: example local marketplace entry for the repo plugin bundle
 - `claude/README.md`: Claude setup plan and operating notes
 - `claude/templates/global-CLAUDE.md`: template for global Claude rules (installed to `~/.claude/CLAUDE.md`)
 - `claude/templates/rules/`: modular behavior rules (installed to `~/.claude/rules/`)

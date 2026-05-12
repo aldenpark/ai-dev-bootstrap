@@ -57,6 +57,8 @@ Codex path:
 - optional Stop hook and monthly learn-eval scheduler
 - optional MemPalace Cloud MCP
 - optional local Qwen3.6 coding worker through `llama.cpp`/`llama-server`
+- repo-local Codex plugin bundle scaffold in `plugins/ai-dev-bootstrap-codex/`
+- repo-local Codex project-management plugin scaffold in `plugins/ai-dev-bootstrap-projects/`
 
 Claude path:
 
@@ -84,6 +86,9 @@ Shared path:
 - `evals/README.md`: Promptfoo starter usage
 - `CURRENT_STATE.md`: what is implemented and likely next
 - `DECISIONS.md`: stable repo decisions
+- `plugins/ai-dev-bootstrap-codex/`: repo-local Codex plugin bundle
+- `plugins/ai-dev-bootstrap-projects/`: repo-local Codex project-management plugin
+- `.agents/plugins/marketplace.json`: example local marketplace entry for the repo plugin bundle
 
 ## Install Commands
 
